@@ -12,7 +12,7 @@
 
 _Design previews will be added here. Example:_
 
-![Homepage Design](./design/Homepage.jpg)
+![Homepage Design](../BusBooking/design/Homepage.jpg)
 ![Seat Selection](./design/seat-selection.png)
 
 ---
