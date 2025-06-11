@@ -13,8 +13,8 @@
 _Design previews will be added here. Example:_
 
 ![Homepage Design](BusBooking/design/Homepage.jpg)
-![Seat Selection](./design/seat-selection.png)
-
+![Map](BusBooking/design/Map.jpg)
+![About Us](BusBooking/design/AboutUs.jpg)
 ---
 
 ## 🛠️ Current Functionality (Backend)
@@ -60,10 +60,10 @@ _Design previews will be added here. Example:_
 ## 📁 Project Structure
 
 /BusBooking
-│
-├── Controllers # ASP.NET MVC controllers
-├── Models # Data models (EF Core)
-├── Views # Razor views (admin panel)
-├── Data # Database context and migrations
-├── wwwroot # Static files
-└── design # Screenshots or design references
+- │
+- ├── Controllers # ASP.NET MVC controllers
+- ├── Models # Data models (EF Core)
+- ├── Views # Razor views (admin panel)
+- ├── Data # Database context and migrations
+- ├── wwwroot # Static files
+- └── design # Screenshots or design references
