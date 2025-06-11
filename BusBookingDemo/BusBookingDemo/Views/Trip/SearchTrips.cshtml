@@ -1,0 +1,105 @@
+﻿@model IEnumerable<TripCreateVM>
+<link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+
+@if (User.IsInRole("admin"))
+
+{
+    <div class="row">
+        <div class="col-12 py-5">
+
+            <br>
+            <a href="/Trip/Create" class="btn btn-warning ">New Trip</a>
+            <br>
+            <table class="table table-bordered table-dark ">
+                <thead>
+                    <tr>
+                        <th> From</th>
+                        <th> To</th>
+                        <th> Time</th>
+                        <th> Choose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <p>No tripss found.</p>
+                    }
+                    else
+                    {
+
+                        foreach (var trip in Model)
+
+                        {
+                            <tr>
+
+                                <td>@trip.From</td>
+                                <td>@trip.To</td>
+                                <td>@trip.Time</td>
+                                <td>
+                                    <a href="/Trip/Edit/@trip.TripId" class="btn btn-sm btn-primary">Edit</a>
+                                    <form asp-action="Delete" method="post" onsubmit="return confirm('are you sure?')"
+                                          style="display: inline-block">
+                                        <input type="hidden" name="TripId" value="@trip.TripId" />
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            Delete
+                                        </button>
+                                    </form>
+                                    <!-- <a href="/Trip/Delete/@trip.TripId" class="btn btn-sm btn-danger">Delete</a> -->
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+else
+
+{
+    <div class="row">
+        <div class="col-12 py-5">
+            <table class="table table-bordered table-dark">
+                <thead>
+                    <tr>
+                        <th> From</th>
+                        <th> To</th>
+                        <th> Time</th>
+                        <th> Choose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <p>No Trips found.</p>
+                    }
+                    else
+                    {
+
+                        foreach (var trip in Model)
+
+                        {
+                            <tr>
+
+                                <td>@trip.From</td>
+                                <td>@trip.To</td>
+                                <td>@trip.Time</td>
+                                <td>
+
+
+                                    <a href="@Url.Action("ChooseSeats", "Seat", new { tripId = trip.TripId })"
+                                       class="btn btn-sm btn-primary">Seat Choose</a>
+
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+
+
+            </table>
+        </div>
+    </div>
+
+}
