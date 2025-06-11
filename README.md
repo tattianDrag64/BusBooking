@@ -47,7 +47,7 @@ _Design previews will be added here. Example:_
 
 ## 🚧 Project Status
 
-[x] Project structure and database schema
+- [x] Project structure and database schema
 - [x] Admin dashboard and route management
 - [x] Models for tickets, users, buses, and schedules
 - [ ] REST API for external frontend use
