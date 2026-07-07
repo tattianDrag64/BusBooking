@@ -10,78 +10,78 @@ using System.Security.Claims;
 
 namespace BusBookingDemo.Controllers
 {
-        public class UsersController : Controller
+    public class UsersController : Controller
+    {
+        //private readonly IBookingRepository _bookingRepository;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<UsersController> _logger;
+        private readonly IUnitOfWork _unitOfWork;
+        //private readonly ISeatRepository _seatRepository;
+        //private readonly IUserRepository _userRepository;
+        //private readonly ITripRepository _TripRepository;
+
+        public object HashHelper { get; private set; }
+
+        public UsersController(IUnitOfWork unitOfWork, IConfiguration configuration, ILogger<UsersController> logger)
         {
-            //private readonly IBookingRepository _bookingRepository;
-            private readonly IConfiguration _configuration;
-            private readonly ILogger<UsersController> _logger;
-            private readonly IUnitOfWork _unitOfWork;
-            //private readonly ISeatRepository _seatRepository;
-            //private readonly IUserRepository _userRepository;
-            //private readonly ITripRepository _TripRepository;
+            _configuration = configuration;
+            _logger = logger;
+            _unitOfWork = unitOfWork;
+        }
 
-            public object HashHelper { get; private set; }
+        public IActionResult Index()
+        {
+            var users = _unitOfWork.User.GetAll().ToList();
+            return View(users);
+        }
 
-            public UsersController(IUnitOfWork unitOfWork, IConfiguration configuration, ILogger<UsersController> logger)
+        public IActionResult SignUp()
+        {
+
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult SignUp(SignUpVM model)
+        {
+            if (ModelState.IsValid)
             {
-                _configuration = configuration;
-                _logger = logger;
-                _unitOfWork = unitOfWork;
-            }
-
-            public IActionResult Index()
-            {
-                var users = _unitOfWork.User.GetAll().ToList();
-                return View(users);
-            }
-
-            public IActionResult SignUp()
-            {
-
-                return View();
-            }
-
-            [HttpPost]
-            public IActionResult SignUp(SignUpVM model)
-            {
-                if (ModelState.IsValid)
+                var user = _unitOfWork.User.Get(x => x.Username == model.Username || x.Email == model.Email);
+                if (user == null)
                 {
-                    var user = _unitOfWork.User.Get(x => x.Username == model.Username || x.Email == model.Email);
-                    if (user == null)
+                    var hashedPassword = _unitOfWork.User.HashPassword(model.Password);
+                    _unitOfWork.User.Add(new User
                     {
-                        var hashedPassword = _unitOfWork.User.HashPassword(model.Password);
-                        _unitOfWork.User.Add(new User
-                        {
-                            Username = model.Username,
-                            Phone = model.Phone,
-                            Email = model.Email,
-                            Password = hashedPassword,
-                        });
-                        _unitOfWork.Save();
+                        Username = model.Username,
+                        Phone = model.Phone,
+                        Email = model.Email,
+                        Password = hashedPassword,
+                    });
+                    _unitOfWork.Save();
 
-                        return RedirectToAction("SignIn");
-                    }
-                    else
-                    {
-                        ModelState.AddModelError("", "Email and password already exist");
-                    }
+                    return RedirectToAction("SignIn");
                 }
-                return View(model);
-            }
-
-            public IActionResult SignIn()
-            {
-                var model = new SignInVM();
-                if (User.Identity != null && User.Identity.IsAuthenticated)
+                else
                 {
-                    return RedirectToAction("Index", "Trip");
+                    ModelState.AddModelError("", "Email and password already exist");
                 }
+            }
+            return View(model);
+        }
 
-                return View(model);
+        public IActionResult SignIn()
+        {
+            var model = new SignInVM();
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Index", "Trip");
             }
 
-            // POST: Trips/Login
-            [HttpPost]
+            return View(model);
+        }
+
+        // POST: Trips/Login
+        [HttpPost]
         //[AllowAnonymous]
         //[ValidateAntiForgeryToken]
         //public IActionResult SignIn(SignInVM model)
@@ -123,7 +123,7 @@ namespace BusBookingDemo.Controllers
             if (ModelState.IsValid)
             {
                 var user = _unitOfWork.User.Get(x => x.Email == model.Email);
-                if (user != null && user.Password == model.Password) // Добавлена проверка пароля
+                if (user != null && _unitOfWork.User.VerifyPassword(model.Password, user.Password)) // Добавлена проверка пароля
                 {
                     bool isAdmin = (user.Email == "xyz@mail.com");
 
@@ -158,9 +158,9 @@ namespace BusBookingDemo.Controllers
         }
 
         public IActionResult Logout()
-            {
-                HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return RedirectToAction("SignIn");
-            }
+        {
+            HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("SignIn");
         }
     }
+}

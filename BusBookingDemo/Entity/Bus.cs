@@ -3,7 +3,7 @@ using System.ComponentModel;
 
 namespace BusBookingDemo.Entity
 {
-    public class Bus 
+    public class Bus : BaseEntity
     {
         [Key]
         public int Id { get; set; }
@@ -13,5 +13,8 @@ namespace BusBookingDemo.Entity
         [DisplayName("Seats Count")]
         [Range(1, 80)]
         public int SeatsCount { get; set; }
+        public int RouteId { get; set; }
+
+        public virtual Route Route { get; set; }
     }
 }

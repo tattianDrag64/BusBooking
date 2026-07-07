@@ -20,13 +20,22 @@ namespace BusBookingDemo.Entity
         public string? Time { get; set; }
         [Required]
         public string? Guest { get; set; }
-        
+
         public int BusId { get; set; }
-        
+
         [ValidateNever]
         [ForeignKey("BusId")]
         public Bus Bus { get; set; }
         [Required]
+
+
+        public int ScheduleId { get; set; }
+        public DateTime DepartureDate { get; set; }
+        public DateTime ArrivalDate { get; set; }
+        public bool IsReturnTrip { get; set; }
+        public int RouteId { get; set; }
+
+        public virtual Route Route { get; set; }
         public double Price { get; set; }
     }
 }

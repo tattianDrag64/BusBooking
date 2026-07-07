@@ -4,18 +4,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BusBookingDemo.Entity
 {
-    public class SeatDetail 
+    public class SeatDetail
     {
         [Key]
         public int Id { get; set; }
         [Required]
-        public bool IsOccupied { get; set; } 
-
+        public bool IsOccupied { get; set; }
+        public bool IsReserved { get; set; } = false;
         public string? SeatNumber { get; set; }
 
         [ForeignKey("TripId")]
         [ValidateNever]
-        public int TripId { get; set; } 
+        public int TripId { get; set; }
         public Trip Trip { get; set; }
 
 

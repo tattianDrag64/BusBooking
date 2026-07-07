@@ -1,12 +1,4 @@
 using System.Diagnostics;
-using BusBookingDemo.Entity;
-using BusBookingDemo.Models;
-using BusBookingDemo.Repository;
-using BusBookingDemo.Repository.IRepositories;
-using Microsoft.AspNetCore.Mvc;
-using Mono.TextTemplating;
-using NuGet.Protocol.Core.Types;
-
 namespace BusBookingDemo.Controllers
 {
     public class HomeController : Controller
