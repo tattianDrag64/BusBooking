@@ -2,19 +2,14 @@
 using BusBookingDemo.Models;
 using BusBookingDemo.Repository.IRepositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace BusBookingDemo.Controllers
 {
-    public class BookingController : Controller
+    public class BookingController(IUnitOfWork unitOfWork) : Controller
     {
-        protected readonly IUnitOfWork UnitOfWork;
+        protected readonly IUnitOfWork UnitOfWork = unitOfWork;
 
-        public BookingController(IUnitOfWork unitOfWork)
-        {
-            UnitOfWork = unitOfWork;
-        }
         public IActionResult Index()
         {
             return View();
@@ -29,15 +24,14 @@ namespace BusBookingDemo.Controllers
                 return RedirectToAction("Index", "Trip"); // Örnek bir yönlendirme
             }
 
-            var userId = int.Parse(userIdClaim.Value); // Claim'den alınan değeri int'e çevir
+            var userId = Guid.Parse(userIdClaim.Value);
             // Kullanıcının rezervasyonlarını repository'den al ve ilişkili Trip ve Seat bilgilerini yükle
-            IQueryable<Booking> bookingsList = UnitOfWork.Booking.GetBookingsByUserId(userId);
-
+            var ordersList = UnitOfWork.Order.GetOrdersByUser(userId);
 
             // ViewModel'i oluştur ve rezervasyon listesini ata
-            var viewModel = new BookingVM
+            var viewModel = new OrderVM
             {
-                Bookings = bookingsList
+                Orders = ordersList
             };
 
             // ViewModel'i görünüme gönder

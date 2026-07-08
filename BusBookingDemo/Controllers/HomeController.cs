@@ -1,20 +1,18 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using BusBookingDemo.Models;
+using BusBookingDemo.Repository.IRepositories;
+
 namespace BusBookingDemo.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController(ILogger<HomeController> logger, IUnitOfWork unitOfWork) : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly IUnitOfWork _unitOfWork;
-
-        public HomeController(ILogger<HomeController> logger, IUnitOfWork unitOfWork)
-        {
-            _logger = logger;
-            _unitOfWork = unitOfWork;
-        }
+        private readonly ILogger<HomeController> _logger = logger;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
         public IActionResult Index()
         {
-            return View();
+            return Ok();
         }
 
         public IActionResult Privacy()

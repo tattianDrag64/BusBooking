@@ -7,29 +7,26 @@ namespace BusBookingDemo.Models
     public class TripCreateVM
     {
         [Key]
-        public int TripId { get; set; }
+        public Guid TripId { get; set; }
         [Required]
         [Display(Name = "From")]
-        public string? From { get; set; }
+        public string From { get; set; } = string.Empty;
         [Required]
         [Display(Name = "To")]
-        public string? To { get; set; }
+        public string To { get; set; } = string.Empty;
         [Required]
-        [Display(Name = "Depart")]
-        public string? Depart { get; set; }
+        [Display(Name = "Departure Date")]
+        public DateTime DepartureDate { get; set; }
 
-        [Display(Name = "Return")]
-        public string? Return { get; set; }
+        [Display(Name = "Arrival Date")]
+        public DateTime ArrivalDate { get; set; }
 
-        [Display(Name = "Time")]
-        public string? Time { get; set; }
-        [Required]
-        [Display(Name = "Guest")]
-        public string? Guest { get; set; }
+        public bool IsReturnTrip { get; set; }
+        public double Price { get; set; }
         [ValidateNever]
         [Display(Name = "Bus")]
-        public int BusId { get; set; }
+        public Guid BusId { get; set; }
         [ValidateNever]
-        public IEnumerable<SelectListItem> BusList { get; set; }
+        public IEnumerable<SelectListItem> BusList { get; set; } = [];
     }
 }

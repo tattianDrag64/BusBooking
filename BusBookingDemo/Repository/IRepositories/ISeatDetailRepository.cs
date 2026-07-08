@@ -8,7 +8,7 @@ namespace BusBookingDemo.Repository.IRepositories
         //IEnumerable<SeatDetail> GetAvaiableSeatDetail(int busId);
         //void UpdateSeatReservationStatus(int seatId);
         //public IEnumerable<SeatDetail> GetSeatsByBus(int busId);
-        public IEnumerable<SeatDetail> GetSeatsByTrip(int tripId);
-        public void ReserveSeat(int seatId);
+        public IEnumerable<SeatDetail> GetSeatsByTrip(Guid tripId);
+        public void ReserveSeat(Guid seatId);
     }
 }

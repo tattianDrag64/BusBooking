@@ -4,38 +4,27 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BusBookingDemo.Entity
 {
-    public class Trip
+    public class Trip : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
         [Required]
-        public string? From { get; set; }
+        public required string From { get; set; }
         [Required]
-        public string? To { get; set; }
-        [Required]
-        public string? Depart { get; set; }
-        [Required]
-        public string? Return { get; set; }
-        [Required]
-        public string? Time { get; set; }
-        [Required]
-        public string? Guest { get; set; }
-
-        public int BusId { get; set; }
-
-        [ValidateNever]
+        public required string To { get; set; }
+        public required Guid BusId { get; set; }
         [ForeignKey("BusId")]
-        public Bus Bus { get; set; }
-        [Required]
-
+        [ValidateNever]
+        public virtual Bus Bus { get; set; } = null!;
 
         public int ScheduleId { get; set; }
         public DateTime DepartureDate { get; set; }
         public DateTime ArrivalDate { get; set; }
         public bool IsReturnTrip { get; set; }
-        public int RouteId { get; set; }
 
-        public virtual Route Route { get; set; }
+        public required Guid RouteId { get; set; }
+        [ForeignKey("RouteId")]
+        [ValidateNever]
+        public virtual RouteInfo Route { get; set; } = null!;
+
         public double Price { get; set; }
     }
 }

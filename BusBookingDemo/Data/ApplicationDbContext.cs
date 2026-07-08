@@ -1,72 +1,113 @@
 ﻿using BusBookingDemo.Entity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Mono.TextTemplating;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 
 namespace BusBookingDemo.Data
 {
-        public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
     {
-            public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
-            public DbSet<User> User { get; set; }
-            public DbSet<Booking> Bookings { get; set; }
-            //public DbSet<OrderSeat> OrderSeats { get; set; }
-            public DbSet<Trip> Trips { get; set; }
-            public DbSet<SeatDetail> SeatDetals { get; set; }
-            public DbSet<Bus> Buses { get; set; }
+        public DbSet<User> User { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderSeat> OrderSeats { get; set; }
+        public DbSet<Trip> Trips { get; set; }
+        public DbSet<SeatDetail> SeatDetals { get; set; }
+        public DbSet<Bus> Buses { get; set; }
+        public DbSet<RouteInfo> Routes { get; set; }
 
-            protected override void OnModelCreating(ModelBuilder modelBuilder)
-            {
+        private static readonly Guid SeedRouteId = Guid.Parse("a0000000-0000-0000-0000-000000000001");
+        private static readonly Guid SeedBus1Id = Guid.Parse("b0000000-0000-0000-0000-000000000001");
+        private static readonly Guid SeedBus2Id = Guid.Parse("b0000000-0000-0000-0000-000000000002");
+        private static readonly Guid SeedBus3Id = Guid.Parse("b0000000-0000-0000-0000-000000000003");
+        private static readonly Guid SeedUser1Id = Guid.Parse("c0000000-0000-0000-0000-000000000001");
+        private static readonly Guid SeedUser2Id = Guid.Parse("c0000000-0000-0000-0000-000000000002");
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<RouteInfo>().HasData(
+                    new RouteInfo
+                    {
+                        Id = SeedRouteId,
+                        DepartureCity = "Sofia",
+                        ArrivalCity = "Berlin",
+                        DepartureDay = DayOfWeek.Monday,
+                        ReturnDay = DayOfWeek.Tuesday,
+                        DepartureTime = TimeSpan.Parse("08:00:00"),
+                        ReturnTime = TimeSpan.Parse("18:00:00"),
+                        Price = 45.00m
+                    });
+
             modelBuilder.Entity<Bus>().HasData(
-                    new Bus { Id = 1, BusNumber = "234AA", SeatsCount = 24 },
-                    new Bus { Id = 2, BusNumber = "211DA", SeatsCount = 34 },
-                    new Bus { Id = 3, BusNumber = "232AC", SeatsCount = 20 }
+                    new Bus { Id = SeedBus1Id, BusNumber = "234AA", SeatsCount = 24, RouteId = SeedRouteId },
+                    new Bus { Id = SeedBus2Id, BusNumber = "211DA", SeatsCount = 34, RouteId = SeedRouteId },
+                    new Bus { Id = SeedBus3Id, BusNumber = "232AC", SeatsCount = 20, RouteId = SeedRouteId }
                     );
 
             modelBuilder.Entity<User>().HasData(
                     new User
                     {
-                        Id = 1,
+                        Id = SeedUser1Id,
                         FirstName = "tatiana",
                         LastName = "tat",
                         Username = "tati",
-                        Password = "1234",
+                        PasswordHash = "1234",
                         Email = "xyz@mail.com",
                         Phone = "12345",
                         Role = "Admin"
                     },
-                    new User {
-                        Id = 2,
+                    new User
+                    {
+                        Id = SeedUser2Id,
                         FirstName = "anna",
                         LastName = "aniina",
                         Username = "anni",
-                        Password = "1234",
+                        PasswordHash = "1234",
                         Email = "xyz1@mail.com",
                         Phone = "12345",
                         Role = "Customer"
                     }
                     );
 
-            // Booking
-            modelBuilder.Entity<Booking>()
-                .HasOne(b => b.User)
+            // Order
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.User)
                 .WithMany()
-                .HasForeignKey(b => b.UserId)
+                .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Booking>()
-                .HasOne(b => b.Trip)
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Route)
                 .WithMany()
-                .HasForeignKey(b => b.TripId)
+                .HasForeignKey(o => o.RouteId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Booking>()
-                .HasOne(b => b.SeatDetail)
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Trip)
                 .WithMany()
-                .HasForeignKey(b => b.SeatDetailId)
+                .HasForeignKey(o => o.TripId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // OrderSeat
+            modelBuilder.Entity<OrderSeat>()
+                .HasOne(os => os.Order)
+                .WithMany(o => o.OrderSeats)
+                .HasForeignKey(os => os.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<OrderSeat>()
+                .HasOne(os => os.SeatDetail)
+                .WithMany()
+                .HasForeignKey(os => os.SeatDetailId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderSeat>()
+                .HasOne(os => os.Trip)
+                .WithMany()
+                .HasForeignKey(os => os.TripId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Место не может участвовать в двух активных заказах одновременно
+            modelBuilder.Entity<OrderSeat>()
+                .HasIndex(os => os.SeatDetailId)
+                .IsUnique();
 
             // Trip
             modelBuilder.Entity<Trip>()
@@ -74,6 +115,12 @@ namespace BusBookingDemo.Data
                 .WithMany()
                 .HasForeignKey(t => t.BusId)
                 .OnDelete(DeleteBehavior.Restrict); // Автобус может быть удален с каскадным удалением поездок
+
+            modelBuilder.Entity<Trip>()
+                .HasOne(t => t.Route)
+                .WithMany()
+                .HasForeignKey(t => t.RouteId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // SeatDetail
             modelBuilder.Entity<SeatDetail>()
@@ -109,5 +156,5 @@ namespace BusBookingDemo.Data
             //    }
             //    );
         }
-        }
     }
+}

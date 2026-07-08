@@ -2,7 +2,6 @@
 using BusBookingDemo.Data;
 using BusBookingDemo.Repository.IRepositories;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace BusBookingDemo.Repository
@@ -29,7 +28,7 @@ namespace BusBookingDemo.Repository
             Items.Add(entity);
         }
 
-        public T Get(Expression<Func<T, bool>> filter, string? includeProperties = null, bool tracked = false)
+        public T? Get(Expression<Func<T, bool>> filter, string? includeProperties = null, bool tracked = false)
         {
             IQueryable<T> query = tracked ? Items : Items.AsNoTracking();
             query = query.Where(filter);
@@ -52,12 +51,12 @@ namespace BusBookingDemo.Repository
             if (!string.IsNullOrEmpty(includeProperties))
             {
                 foreach (var includeProp in includeProperties
-                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    .Split([','], StringSplitOptions.RemoveEmptyEntries))
                 {
                     query = query.Include(includeProp);
                 }
             }
-            return query.ToList();
+            return [.. query];
         }
 
         public void Remove(T entity)

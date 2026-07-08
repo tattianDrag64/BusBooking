@@ -3,11 +3,13 @@
     public interface IUnitOfWork
     {
         IBusRepository Bus { get; }
-        IBookingRepository Booking { get; }
         ISeatDetailRepository SeatDetail { get; }
         ITripRepository Trip { get; }
         IUserRepository User { get; }
-        //ICartRepository Cart { get; }
+        IOrderRepository Order { get; }
+        IOrderSeatRepository OrderSeat { get; }
+        IRouteRepository Route { get; }
+
         void Save();
     }
 }

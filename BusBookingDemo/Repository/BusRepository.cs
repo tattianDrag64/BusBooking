@@ -1,17 +1,15 @@
 ﻿using BusBookingDemo.Data;
 using BusBookingDemo.Entity;
 using BusBookingDemo.Repository.IRepositories;
-using Microsoft.EntityFrameworkCore;
 
 namespace BusBookingDemo.Repository
 {
-    public class BusRepository : Repository<Bus>, IBusRepository
+    public class BusRepository(ApplicationDbContext context) : Repository<Bus>(context), IBusRepository
     {
-        public BusRepository(ApplicationDbContext context) : base(context) { }
-
-        public int GetSeatsCount(int id)
+        public int GetSeatsCount(Guid id)
         {
-            var bus = Items.FirstOrDefault(b => b.Id == id); // Ищем автобус с указанным ID
+            var bus = Items.FirstOrDefault(b => b.Id == id)
+                ?? throw new InvalidOperationException($"Bus {id} not found.");
             return bus.SeatsCount;
         }
         public void Update(Bus bus)

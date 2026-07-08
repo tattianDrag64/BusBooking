@@ -1,21 +1,17 @@
-﻿using BusBooking.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-namespace BusBooking.Entities
+﻿namespace BusBookingDemo.Entity
 {
     public class Order : BaseEntity
     {
-        public string OrderCode { get; set; }
-        public int UserId { get; set; }
-        public int RouteId { get; set; }
-        public int TripId { get; set; }
+        public required string OrderCode { get; set; }
+        public required Guid UserId { get; set; }
+        public required Guid RouteId { get; set; }
+        public required Guid TripId { get; set; }
         public decimal TotalPrice { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public virtual User User { get; set; }
-        public virtual Route Route { get; set; }
+        public virtual User User { get; set; } = null!;
+        public virtual RouteInfo Route { get; set; } = null!;
+        public virtual Trip Trip { get; set; } = null!;
+        public virtual ICollection<OrderSeat> OrderSeats { get; set; } = [];
     }
 }

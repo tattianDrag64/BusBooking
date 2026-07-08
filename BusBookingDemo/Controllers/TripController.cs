@@ -17,19 +17,14 @@ using Mono.TextTemplating;
 
 namespace BusBookingDemo.Controllers
 {
-    public class TripController : Controller
+    public class TripController(IUnitOfWork unitOfWork, ILogger<TripRepository> logger) : Controller
     {
-        private IUnitOfWork _unitOfWork;
-        private readonly ILogger<TripRepository> _logger;
-        public TripController(IUnitOfWork unitOfWork, ILogger<TripRepository> logger)
-        {
-            _unitOfWork = unitOfWork;
-            _logger = logger;
-        }
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly ILogger<TripRepository> _logger = logger;
+
         public IActionResult Index()
         {
-           
-            return View();
+            return Ok();
         }
         [HttpPost]
         public IActionResult Index(TripVM model)
@@ -41,27 +36,11 @@ namespace BusBookingDemo.Controllers
 
                 if (trip == null)
                 {
-                    // Создание новой поездки
-                    var newTrip = new Trip
-                    {
-                        From = model.From,
-                        To = model.To,
-                        Depart = model.Depart,
-                        Return = model.Return,
-                        Guest = model.Guest
-                    };
-                    _unitOfWork.Trip.Add(newTrip);
-                    _unitOfWork.Save();
-
-                    // Добавление в репозиторий
-
-
-                    // Перенаправление на Index
-                    return RedirectToAction("SignIn");
+                    ModelState.AddModelError("", "No matching trip found.");
+                    return BadRequest(ModelState);
                 }
-                
             }
-            return View(model);
+            return Ok(model);
         }
 
         //[Authorize(Roles = "admin")]
@@ -75,7 +54,7 @@ namespace BusBookingDemo.Controllers
                     Value = u.Id.ToString()
                 })// Приводим к списку, чтобы избежать проблем с ленивой загрузкой
             };
-            return View(model);
+            return Ok(model);
         }
 
         [HttpPost]
@@ -87,21 +66,30 @@ namespace BusBookingDemo.Controllers
 
             if (ModelState.IsValid)
             {
+                var bus = _unitOfWork.Bus.Get(b => b.Id == model.BusId);
+                if (bus == null)
+                {
+                    ModelState.AddModelError("", "Selected bus not found.");
+                    return BadRequest(ModelState);
+                }
+
                 // Преобразуем данные из модели представления в сущность Trip
                 var newTrip = new Trip
                 {
                     From = model.From,
                     To = model.To,
-                    Depart = Convert.ToString(model.Depart),
-                    Return = model.Return,
-                    Time = model.Time,
-                    Guest = model.Guest
+                    BusId = model.BusId,
+                    RouteId = bus.RouteId,
+                    DepartureDate = model.DepartureDate,
+                    ArrivalDate = model.ArrivalDate,
+                    IsReturnTrip = model.IsReturnTrip,
+                    Price = model.Price
                 };
                 model.BusList = _unitOfWork.Bus.GetAll().Select(u => new SelectListItem
-            {
-                Text = u.BusNumber,
-                Value = u.Id.ToString()
-            });
+                {
+                    Text = u.BusNumber,
+                    Value = u.Id.ToString()
+                });
 
                 // Добавляем новый объект в базу данных
                 _unitOfWork.Trip.Add(newTrip);
@@ -111,22 +99,22 @@ namespace BusBookingDemo.Controllers
             }
 
             // Если валидация не прошла, заново создаем модель для представления
-            
 
-            return View(model); // Возвращаем представление с текущей моделью
+
+            return BadRequest(ModelState);
         }
 
 
         public IActionResult SearchTrips(TripVM model)
         {
 
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity?.IsAuthenticated != true)
             {
                 // TempData kullanarak bir sonraki request'e kadar veri saklayabilirsiniz.
                 TempData["Error"] = "You must be logged in to view this page.";
                 return RedirectToAction("Index");
             }
-            if (string.IsNullOrWhiteSpace(model.Depart))
+            if (string.IsNullOrWhiteSpace(model.To))
             {
                 //ModelState.AddModelError("", "Departure location cannot be empty.");
                 TempData["Error"] = "Departure location cannot be empty.";
@@ -134,33 +122,34 @@ namespace BusBookingDemo.Controllers
             }
             if (!ModelState.IsValid)
             {
-                return View("Index", model);
+                return BadRequest(ModelState);
             }
-            var trips = _unitOfWork.Trip.GetAll().Where(f => f.From == model.From && f.To == model.To && f.Guest == model.Guest);
+            var trips = _unitOfWork.Trip.GetAll().Where(f => f.From == model.From && f.To == model.To);
 
             // Фильтрация по One Way или Return
-            if (model.IsOneWay)
+            if (model.IsReturnTrip)
             {
-                trips = trips.Where(f => f.Depart == model.Depart);
+                trips = trips.Where(f => f.DepartureDate.Date == model.DepartureDate.Date &&
+                                          f.ArrivalDate.Date == model.ArrivalDate.Date);
             }
             else
             {
-                trips = trips.Where(f => f.Depart == model.Depart &&
-                                              (string.IsNullOrEmpty(model.Return) || f.Return == model.Return));
+                trips = trips.Where(f => f.DepartureDate.Date == model.DepartureDate.Date);
             }
 
             // Преобразование данных в представление
             var tripResults = trips.Select(f => new TripCreateVM
             {
+                TripId = f.Id,
                 From = f.From,
                 To = f.To,
-                Depart = f.Depart,
-                Return = f.Return,
-                Time = f.Time,
-                Guest = f.Guest
+                DepartureDate = f.DepartureDate,
+                ArrivalDate = f.ArrivalDate,
+                IsReturnTrip = f.IsReturnTrip,
+                Price = f.Price
             }).ToList();
 
-            return View("SearchTrips", tripResults);
+            return Ok(tripResults);
         }
 
 
@@ -177,15 +166,14 @@ namespace BusBookingDemo.Controllers
                     //Id = TripEntity.Id,
                     From = tripsEntity.From,
                     To = tripsEntity.To,
-                    Time = tripsEntity.Time
                     // Burada diğer gerekli alanları da ekleyebilirsiniz
                 });
 
-            return View("SearchTrips", trips);
+            return Ok(trips);
         }
 
 
-        public IActionResult Edit(int id)
+        public IActionResult Edit(Guid id)
         {
             var trip = _unitOfWork.Trip.Get(f => f.Id == id);
             if (trip == null)
@@ -194,26 +182,26 @@ namespace BusBookingDemo.Controllers
             }
             var model = new TripCreateVM
             {
-                BusList = _unitOfWork.Bus.GetAll().Select(u => new SelectListItem
+                BusList = [.. _unitOfWork.Bus.GetAll().Select(u => new SelectListItem
                 {
                     Text = u.BusNumber,
                     Value = u.Id.ToString()
-                }).ToList() // Приводим к списку, чтобы избежать проблем с ленивой загрузкой
+                })] // Приводим к списку, чтобы избежать проблем с ленивой загрузкой
             };
             // Найти рейс по ID
-            
 
-            return View(trip); // Отобразить форму редактирования
+
+            return Ok(trip);
         }
 
         // POST: Trips/Edit/5
         [HttpPost]
         //[ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Trip model)
+        public IActionResult Edit(Guid id, Trip model)
         {
             if (!ModelState.IsValid)
             {
-                return View(model); // Вернуть форму с ошибками
+                return BadRequest(ModelState);
             }
 
             var tripToUpdate = _unitOfWork.Trip.Get(f => f.Id == id);
@@ -225,10 +213,10 @@ namespace BusBookingDemo.Controllers
             // Обновить поля
             tripToUpdate.From = model.From;
             tripToUpdate.To = model.To;
-            tripToUpdate.Depart = model.Depart;
-            tripToUpdate.Return = model.Return;
-            tripToUpdate.Time = model.Time;
-            tripToUpdate.Guest = model.Guest;
+            tripToUpdate.DepartureDate = model.DepartureDate;
+            tripToUpdate.ArrivalDate = model.ArrivalDate;
+            tripToUpdate.IsReturnTrip = model.IsReturnTrip;
+            tripToUpdate.Price = model.Price;
 
             _unitOfWork.Trip.Update(tripToUpdate); // Сохранить изменения
             _unitOfWork.Save();
@@ -251,7 +239,7 @@ namespace BusBookingDemo.Controllers
         // POST: Trips/Delete/5
         [HttpPost/*, ActionName("Delete")*/]
         //[ValidateAntiForgeryToken]
-        public IActionResult Delete(int id)
+        public IActionResult Delete(Guid id)
         {
             var tripToDelete = _unitOfWork.Trip.Get(f => f.Id == id);
             if (tripToDelete == null)
@@ -268,10 +256,10 @@ namespace BusBookingDemo.Controllers
         [AllowAnonymous]
         public IActionResult Login()
         {
-            return View(); // Отобразить форму входа
+            return Ok();
         }
 
-       
+
 
         // POST: Trips/Logout
         [HttpPost]

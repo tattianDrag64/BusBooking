@@ -4,25 +4,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BusBookingDemo.Entity
 {
-    public class SeatDetail
+    public class SeatDetail : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
         [Required]
         public bool IsOccupied { get; set; }
         public bool IsReserved { get; set; } = false;
         public string? SeatNumber { get; set; }
 
+        public required Guid TripId { get; set; }
         [ForeignKey("TripId")]
         [ValidateNever]
-        public int TripId { get; set; }
-        public Trip Trip { get; set; }
-
-
-        //[ForeignKey("BusId")]
-        //[ValidateNever]
-        //public int BusId { get; set; }
-        //public Bus Bus { get; set; }
-
+        public virtual Trip Trip { get; set; } = null!;
     }
 }

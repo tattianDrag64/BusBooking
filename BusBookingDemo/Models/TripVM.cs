@@ -6,27 +6,19 @@ namespace BusBookingDemo.Models
 {
     public class TripVM
     {
-        public bool IsOneWay { get; set; }
+        public bool IsReturnTrip { get; set; }
         [Required]
         [Display(Name = "From")]
-        public string? From { get; set; }
+        public required string From { get; set; }
         [Required]
         [Display(Name = "To")]
-        public string? To { get; set; }
+        public required string To { get; set; }
         [Required]
-        [Display(Name = "Depart")]
-        public string? Depart { get; set; }
-
-        [Display(Name = "Time")]
-        public string? Time { get; set; }
+        [Display(Name = "Departure Date")]
+        public DateTime DepartureDate { get; set; }
         [Required]
-        [Display(Name = "Return")]
-        public string? Return { get; set; }
-        [Required]
-        [Display(Name = "Guest")]
-        public string? Guest { get; set; }
-
-        [ValidateNever]
-        public IEnumerable<SelectListItem> BusList { get; set; }
+        [Display(Name = "Arrival Date")]
+        public DateTime ArrivalDate { get; set; }
+        public double Price { get; set; }
     }
 }

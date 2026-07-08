@@ -6,10 +6,8 @@ using System;
 
 namespace BusBookingDemo.Repository
 {
-    public class SeatDetailRepository : Repository<SeatDetail>, ISeatDetailRepository
+    public class SeatDetailRepository(ApplicationDbContext context) : Repository<SeatDetail>(context), ISeatDetailRepository
     {
-        //private ApplicationDbContext Context;
-        public SeatDetailRepository(ApplicationDbContext context) : base(context) { }
 
         //public bool CheckSeatStatus(int seatNumber, int busId)
         //{
@@ -22,12 +20,12 @@ namespace BusBookingDemo.Repository
         //    return Items.Where(sd => sd.BusId == busId && sd.IsReserved == false).ToList();
         //}
 
-        public IEnumerable<SeatDetail> GetSeatsByTrip(int tripId)
+        public IEnumerable<SeatDetail> GetSeatsByTrip(Guid tripId)
         {
-            return Items.Where(s => s.TripId == tripId && !s.IsOccupied).ToList();
+            return [.. Items.Where(s => s.TripId == tripId && !s.IsOccupied)];
         }
 
-        public void ReserveSeat(int seatId)
+        public void ReserveSeat(Guid seatId)
         {
             var seat = Items.FirstOrDefault(sd => sd.Id == seatId);
             if (seat != null && !seat.IsOccupied)
@@ -35,7 +33,8 @@ namespace BusBookingDemo.Repository
                 seat.IsOccupied = true;
                 Items.Update(seat);
                 Context.SaveChanges();
-            };
+            }
+            ;
         }
     }
 

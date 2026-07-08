@@ -16,7 +16,7 @@
                         @(seat.IsOccupied ? "disabled" : "") />
                         <label for="seat-@seat.SeatNumber" class="seat-label">
                             <img src="~/img/seat.png" alt="Seat" class="seat-icon" />
-                            Seat @seat.SeatNumber.Substring(5)
+                            Seat @seat.SeatNumber?.Substring(5)
                         </label>
                         @if (seat.IsOccupied)
                         {

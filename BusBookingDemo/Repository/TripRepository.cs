@@ -5,11 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BusBookingDemo.Repository
 {
-    public class TripRepository : Repository<Trip>, ITripRepository
+    public class TripRepository(ApplicationDbContext context) : Repository<Trip>(context), ITripRepository
     {
-        //private ApplicationDbContext Context;
-        public TripRepository(ApplicationDbContext context) : base(context) { }
-
         public IQueryable<Trip> Trips => Context.Set<Trip>();
 
         //public Task DeleteTrip(Trip Trip)
@@ -33,7 +30,7 @@ namespace BusBookingDemo.Repository
             Items.Update(obj);
         }
 
-        
+
 
         //public IEnumerable<Trip> GetTripsByDirection(int directionId)
         //{

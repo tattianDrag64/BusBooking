@@ -10,24 +10,17 @@ using System.Security.Claims;
 
 namespace BusBookingDemo.Controllers
 {
-    public class UsersController : Controller
+    public class UsersController(IUnitOfWork unitOfWork, IConfiguration configuration, ILogger<UsersController> logger) : Controller
     {
         //private readonly IBookingRepository _bookingRepository;
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<UsersController> _logger;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IConfiguration _configuration = configuration;
+        private readonly ILogger<UsersController> _logger = logger;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
         //private readonly ISeatRepository _seatRepository;
         //private readonly IUserRepository _userRepository;
         //private readonly ITripRepository _TripRepository;
 
-        public object HashHelper { get; private set; }
-
-        public UsersController(IUnitOfWork unitOfWork, IConfiguration configuration, ILogger<UsersController> logger)
-        {
-            _configuration = configuration;
-            _logger = logger;
-            _unitOfWork = unitOfWork;
-        }
+        public object? HashHelper { get; private set; }
 
         public IActionResult Index()
         {
@@ -52,10 +45,13 @@ namespace BusBookingDemo.Controllers
                     var hashedPassword = _unitOfWork.User.HashPassword(model.Password);
                     _unitOfWork.User.Add(new User
                     {
+                        FirstName = model.FirstName,
+                        LastName = model.LastName,
                         Username = model.Username,
                         Phone = model.Phone,
                         Email = model.Email,
-                        Password = hashedPassword,
+                        PasswordHash = hashedPassword,
+                        Role = "Customer",
                     });
                     _unitOfWork.Save();
 
@@ -123,16 +119,16 @@ namespace BusBookingDemo.Controllers
             if (ModelState.IsValid)
             {
                 var user = _unitOfWork.User.Get(x => x.Email == model.Email);
-                if (user != null && _unitOfWork.User.VerifyPassword(model.Password, user.Password)) // Добавлена проверка пароля
+                if (user != null && _unitOfWork.User.VerifyPassword(model.Password, user.PasswordHash)) // Добавлена проверка пароля
                 {
                     bool isAdmin = (user.Email == "xyz@mail.com");
 
                     var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, isAdmin ? "admin" : "user")
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Name, user.Username),
+                new(ClaimTypes.Email, user.Email),
+                new(ClaimTypes.Role, isAdmin ? "admin" : "user")
             };
 
                     var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

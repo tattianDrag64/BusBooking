@@ -1,7 +1,6 @@
 ﻿using BusBookingDemo.Entity;
 using BusBookingDemo.Models;
 using BusBookingDemo.Repository.IRepositories;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -9,20 +8,10 @@ namespace BusBookingDemo.Controllers
 {
     public class SeatDetailController
     {
-        public class SeatController : Controller
+        public class SeatController(IUnitOfWork unitOfWork, ILogger<SeatController> logger) : Controller
         {
-            protected readonly IUnitOfWork UnitOfWork;
-            private readonly IBookingRepository _bookingRepository;
-            private readonly ILogger<SeatController> _logger;
-            //private readonly DataContext _context;
-
-            public SeatController(IUnitOfWork unitOfWork, IBookingRepository bookingRepository, ILogger<SeatController> logger)
-            {
-                UnitOfWork = unitOfWork;
-                
-                _bookingRepository = bookingRepository;
-                _logger = logger;
-            }
+            protected readonly IUnitOfWork UnitOfWork = unitOfWork;
+            private readonly ILogger<SeatController> _logger = logger;
 
             public IActionResult Index()
             {
@@ -30,7 +19,7 @@ namespace BusBookingDemo.Controllers
             }
 
             //[Authorize]
-            public IActionResult ChooseSeats(int tripId)
+            public IActionResult ChooseSeats(Guid tripId)
             {
                 var tripExists = UnitOfWork.Trip.Get(f => f.Id == tripId);
                 if (tripExists == null)
@@ -41,7 +30,7 @@ namespace BusBookingDemo.Controllers
 
                 var seats = UnitOfWork.SeatDetail.GetAll(s => s.TripId == tripId).ToList();
                 // Если нет мест, создаём 20 мест по умолчанию
-                if (!seats.Any())
+                if (seats.Count == 0)
                 {
                     var busId = tripExists.BusId;
                     var seatsCount = UnitOfWork.Bus.GetSeatsCount(busId);
@@ -56,12 +45,12 @@ namespace BusBookingDemo.Controllers
                 var model = new SeatBookingVM
                 {
                     TripId = tripId,
-                    Seats = seats.Select(s => new SeatDetailVM
+                    Seats = [.. seats.Select(s => new SeatDetailVM
                     {
                         Id = s.Id,
                         SeatNumber = s.SeatNumber,
                         IsOccupied = s.IsOccupied
-                    }).ToList()
+                    })]
                 };
 
                 return View(model);
@@ -69,32 +58,47 @@ namespace BusBookingDemo.Controllers
 
             //[Authorize]
             [HttpPost]
-            public IActionResult ChooseSeats(SeatBookingVM model, int tripId)
+            public IActionResult ChooseSeats(SeatBookingVM model, Guid tripId)
             {
-                // Резервируем выбранное место
-                UnitOfWork.SeatDetail.ReserveSeat(model.SelectedSeat);
-                TempData["SuccessMessage"] = "Ваш полет был успешно забронирован.";
-
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim != null)
-                {
-                    var userId = int.Parse(userIdClaim.Value);
-                    var booking = new Booking
-                    {
-                        UserId = userId,
-                        TripId = tripId,
-                        SeatDetailId = model.SelectedSeat,
-                    };
-
-                    UnitOfWork.Booking.Add(booking);
-                    UnitOfWork.Save();
-
-                    return RedirectToAction("Index", "Trip");
-                }
-                else
+                if (userIdClaim == null)
                 {
                     return View("Index");
                 }
+
+                var trip = UnitOfWork.Trip.Get(t => t.Id == tripId);
+                if (trip == null)
+                {
+                    return NotFound(tripId);
+                }
+
+                // Резервируем выбранное место
+                UnitOfWork.SeatDetail.ReserveSeat(model.SelectedSeat);
+                TempData["SuccessMessage"] = "Ваш рейс был успешно забронирован.";
+
+                var userId = Guid.Parse(userIdClaim.Value);
+                var order = new Order
+                {
+                    Id = Guid.NewGuid(),
+                    OrderCode = "ORD-" + Guid.NewGuid().ToString("N")[..8].ToUpper(),
+                    UserId = userId,
+                    RouteId = trip.RouteId,
+                    TripId = tripId,
+                    TotalPrice = (decimal)trip.Price
+                };
+                UnitOfWork.Order.Add(order);
+
+                var orderSeat = new OrderSeat
+                {
+                    OrderId = order.Id,
+                    SeatDetailId = model.SelectedSeat,
+                    TripId = tripId
+                };
+                UnitOfWork.OrderSeat.Add(orderSeat);
+
+                UnitOfWork.Save();
+
+                return RedirectToAction("Index", "Trip");
             }
         }
 
