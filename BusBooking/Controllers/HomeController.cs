@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using BusBooking.Models;
-using BusBooking.Repository.IRepositories;
+using BusBooking.Repository.UnitOfWork;
 
 namespace BusBooking.Controllers
 {

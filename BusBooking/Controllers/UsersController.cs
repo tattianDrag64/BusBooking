@@ -1,7 +1,7 @@
 ﻿using BusBooking.Entity;
 using BusBooking.Models;
-using BusBooking.Repository;
-using BusBooking.Repository.IRepositories;
+using BusBooking.Repository.UnitOfWork;
+using BusBooking.Services.ServiceManager;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -10,18 +10,16 @@ using System.Security.Claims;
 
 namespace BusBooking.Controllers
 {
-    public class UsersController(IUnitOfWork unitOfWork, IConfiguration configuration, ILogger<UsersController> logger) : Controller
+    public class UsersController(IUnitOfWork unitOfWork, IServiceManager services, IConfiguration configuration, ILogger<UsersController> logger) : Controller
     {
-        //private readonly IBookingRepository _bookingRepository;
         private readonly IConfiguration _configuration = configuration;
         private readonly ILogger<UsersController> _logger = logger;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        //private readonly ISeatRepository _seatRepository;
-        //private readonly IUserRepository _userRepository;
-        //private readonly ITripRepository _TripRepository;
+        private readonly IServiceManager _services = services;
 
         public object? HashHelper { get; private set; }
 
+        [Authorize(Roles = "admin")]
         public IActionResult Index()
         {
             var users = _unitOfWork.User.GetAll().ToList();
@@ -39,10 +37,10 @@ namespace BusBooking.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = _unitOfWork.User.Get(x => x.Username == model.Username || x.Email == model.Email);
+                var user = _unitOfWork.User.Get(x => x.Username.ToLower() == model.Username.ToLower() || x.Email.ToLower() == model.Email.ToLower());
                 if (user == null)
                 {
-                    var hashedPassword = _unitOfWork.User.HashPassword(model.Password);
+                    var hashedPassword = _services.PasswordHasherService.HashPassword(model.Password);
                     _unitOfWork.User.Add(new User
                     {
                         FirstName = model.FirstName,
@@ -51,7 +49,7 @@ namespace BusBooking.Controllers
                         Phone = model.Phone,
                         Email = model.Email,
                         PasswordHash = hashedPassword,
-                        Role = "Customer",
+                        Role = UserRole.Customer,
                     });
                     _unitOfWork.Save();
 
@@ -76,52 +74,16 @@ namespace BusBooking.Controllers
             return View(model);
         }
 
-        // POST: Trips/Login
+
         [HttpPost]
-        //[AllowAnonymous]
-        //[ValidateAntiForgeryToken]
-        //public IActionResult SignIn(SignInVM model)
-        //{
-        //    if (ModelState.IsValid)
-        //    {
-        //        var user = _unitOfWork.User.Get(x => x.Email == model.Email);
-        //        if (user != null && _unitOfWork.User.VerifyPassword(model.Password, user.Password))
-        //        {
-        //            // Проверка на администратора
-        //            var isAdmin = (user.Email == "xyz@mail.com");
-
-        //            var claims = new List<Claim>
-        //    {
-        //        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        //        new Claim(ClaimTypes.Name, user.Username),
-        //        new Claim(ClaimTypes.Email, user.Email),
-        //        new Claim(ClaimTypes.Role, isAdmin ? "admin" : "user")
-        //    };
-
-        //            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        //            var principal = new ClaimsPrincipal(identity);
-        //            HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal).Wait();
-
-        //            return RedirectToAction("Index", "Trip"); // Перенаправить на главную страницу
-        //        }
-        //        else
-        //        {
-        //            ModelState.AddModelError("", "Invalid login attempt.");
-        //            return View(model); // Вернуть форму с ошибкой
-        //        }
-        //    }
-
-        //    return View(model); // Вернуть форму с ошибками валидации
-        //}
-
         public async Task<IActionResult> SignIn(SignInVM model)
         {
             if (ModelState.IsValid)
             {
-                var user = _unitOfWork.User.Get(x => x.Email == model.Email);
-                if (user != null && _unitOfWork.User.VerifyPassword(model.Password, user.PasswordHash)) // Добавлена проверка пароля
+                var user = _unitOfWork.User.Get(x => x.Email.ToLower() == model.Email.ToLower());
+                if (user != null && _services.PasswordHasherService.VerifyPassword(model.Password, user.PasswordHash)) // Добавлена проверка пароля
                 {
-                    bool isAdmin = (user.Email == "xyz@mail.com");
+                    bool isAdmin = user.Role == UserRole.Admin;
 
                     var claims = new List<Claim>
             {
@@ -153,9 +115,9 @@ namespace BusBooking.Controllers
             return View(model);
         }
 
-        public IActionResult Logout()
+        public async Task<IActionResult> AwaitLogout()
         {
-            HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("SignIn");
         }
     }

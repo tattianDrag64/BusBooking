@@ -12,9 +12,5 @@ namespace BusBooking.Repository
                 ?? throw new InvalidOperationException($"Bus {id} not found.");
             return bus.SeatsCount;
         }
-        public void Update(Bus bus)
-        {
-            Items.Update(bus);
-        }
     }
 }

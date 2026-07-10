@@ -26,6 +26,7 @@ namespace BusBooking.Models
         [Required]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
+        [StringLength(72, MinimumLength = 8, ErrorMessage = "Password must be between 8 and 72 characters")]
         public required string Password { get; set; }
 
         [Required]

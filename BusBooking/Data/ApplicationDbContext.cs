@@ -12,6 +12,7 @@ namespace BusBooking.Data
         public DbSet<SeatDetail> SeatDetals { get; set; }
         public DbSet<Bus> Buses { get; set; }
         public DbSet<RouteInfo> Routes { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         private static readonly Guid SeedRouteId = Guid.Parse("a0000000-0000-0000-0000-000000000001");
         private static readonly Guid SeedBus1Id = Guid.Parse("b0000000-0000-0000-0000-000000000001");
@@ -48,10 +49,10 @@ namespace BusBooking.Data
                         FirstName = "tatiana",
                         LastName = "tat",
                         Username = "tati",
-                        PasswordHash = "1234",
+                        PasswordHash = "$2a$12$DBm2J6TqFjqAWweLi1mxTOT/AyL/XOxQSuvVWkRCbOEHwaaWZHvyy",
                         Email = "xyz@mail.com",
                         Phone = "12345",
-                        Role = "Admin"
+                        Role = UserRole.Admin
                     },
                     new User
                     {
@@ -59,10 +60,10 @@ namespace BusBooking.Data
                         FirstName = "anna",
                         LastName = "aniina",
                         Username = "anni",
-                        PasswordHash = "1234",
+                        PasswordHash = "$2a$12$DBm2J6TqFjqAWweLi1mxTOT/AyL/XOxQSuvVWkRCbOEHwaaWZHvyy",
                         Email = "xyz1@mail.com",
                         Phone = "12345",
-                        Role = "Customer"
+                        Role = UserRole.Customer
                     }
                     );
 
@@ -85,6 +86,14 @@ namespace BusBooking.Data
                 .HasForeignKey(o => o.TripId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<Order>()
+                .Property(o => o.TotalPrice)
+                .HasPrecision(10, 2);
+
+            modelBuilder.Entity<Order>()
+                .Property(o => o.CreatedAt)
+                .HasColumnType("timestamptz");
+
             // OrderSeat
             modelBuilder.Entity<OrderSeat>()
                 .HasOne(os => os.Order)
@@ -104,7 +113,6 @@ namespace BusBooking.Data
                 .HasForeignKey(os => os.TripId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Место не может участвовать в двух активных заказах одновременно
             modelBuilder.Entity<OrderSeat>()
                 .HasIndex(os => os.SeatDetailId)
                 .IsUnique();
@@ -114,13 +122,25 @@ namespace BusBooking.Data
                 .HasOne(t => t.Bus)
                 .WithMany()
                 .HasForeignKey(t => t.BusId)
-                .OnDelete(DeleteBehavior.Restrict); // Автобус может быть удален с каскадным удалением поездок
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Trip>()
                 .HasOne(t => t.Route)
                 .WithMany()
                 .HasForeignKey(t => t.RouteId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Trip>()
+                .Property(t => t.Price)
+                .HasPrecision(10, 2);
+
+            modelBuilder.Entity<Trip>()
+                .Property(t => t.DepartureDate)
+                .HasColumnType("timestamptz");
+
+            modelBuilder.Entity<Trip>()
+                .Property(t => t.ArrivalDate)
+                .HasColumnType("timestamptz");
 
             // SeatDetail
             modelBuilder.Entity<SeatDetail>()
@@ -129,32 +149,21 @@ namespace BusBooking.Data
                 .HasForeignKey(sd => sd.TripId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            //modelBuilder.Entity<Trip>().HasData(
-            //    new Trip
-            //    {
-            //        Id = 1,
-            //        From = "Sofia",
-            //        To = "Berlin",
-            //        Depart = DayOfWeek.Monday,
-            //        ReturnDay = DayOfWeek.Tuesday,
-            //        DepartureTime = TimeSpan.Parse("01:59:59"),
-            //        ReturnTime = TimeSpan.Parse("03:59:59"),
-            //        Price = 23.20,
-            //        BusId = 1
-            //    },
-            //    new Trip
-            //    {
-            //        Id = 2,
-            //        From = "Sofia",
-            //        To = "Budapesht",
-            //        Depart = DayOfWeek.Wednesday,
-            //        ReturnDay = DayOfWeek.Thursday,
-            //        DepartureTime = TimeSpan.Parse("01:59:59"),
-            //        ReturnTime = TimeSpan.Parse("03:59:59"),
-            //        Price = 23.20,
-            //        BusId = 3
-            //    }
-            //    );
+            //routeinfo 
+            modelBuilder.Entity<RouteInfo>()
+                .Property(r => r.Price)
+                .HasPrecision(10, 2);
+
+            //token
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(rt => rt.User)
+                .WithMany()
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.Role)
+                .HasConversion<string>();
         }
     }
 }

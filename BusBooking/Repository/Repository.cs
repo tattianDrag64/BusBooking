@@ -1,12 +1,12 @@
-﻿
-using BusBooking.Data;
+﻿using BusBooking.Data;
+using BusBooking.Entity;
 using BusBooking.Repository.IRepositories;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace BusBooking.Repository
 {
-    public class Repository<T> : IRepository<T> where T : class
+    public class Repository<T> : IRepository<T> where T : BaseEntity
     {
         protected readonly ApplicationDbContext Context;
         internal DbSet<T> Items;
@@ -16,12 +16,6 @@ namespace BusBooking.Repository
             Context = context;
             Items = Context.Set<T>();
         }
-
-        //public Repository(UnitOfWork uow)
-        //{
-        //    Context = (DbContext)uow.GetContext();
-        //    Items = Context.Set<T>();
-        //}
 
         public void Add(T entity)
         {
@@ -72,6 +66,16 @@ namespace BusBooking.Repository
         public void AddRange(IEnumerable<T> entities)
         {
             Items.AddRange(entities);
+        }
+
+        public void Update(T entity)
+        {
+            Items.Update(entity);
+        }
+
+        public T? GetById(Guid id)
+        {
+            return Items.FirstOrDefault(e => e.Id == id);
         }
     }
 }

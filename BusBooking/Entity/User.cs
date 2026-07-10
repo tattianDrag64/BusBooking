@@ -11,6 +11,6 @@ namespace BusBooking.Entity
         [EmailAddress]
         public required string Email { get; set; }
         public string? Phone { get; set; }
-        public required string Role { get; set; }
+        public required UserRole Role { get; set; }
     }
 }

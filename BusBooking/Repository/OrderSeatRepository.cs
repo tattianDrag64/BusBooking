@@ -11,15 +11,5 @@ namespace BusBooking.Repository
         {
             return [.. Items.Where(os => os.OrderId == orderId)];
         }
-
-        public void AddSeats(IEnumerable<OrderSeat> seats)
-        {
-            Items.AddRange(seats);
-        }
-
-        public void Update(OrderSeat obj)
-        {
-            Items.Update(obj);
-        }
     }
 }
