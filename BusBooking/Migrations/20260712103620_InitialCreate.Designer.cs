@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BusBooking.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260710121037_InitialCreate")]
+    [Migration("20260712103620_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -77,6 +77,9 @@ namespace BusBooking.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamptz");
 
@@ -86,6 +89,15 @@ namespace BusBooking.Migrations
 
                     b.Property<Guid>("RouteId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StripePaymentIntentId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("StripeSessionId")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("TotalPrice")
                         .HasPrecision(10, 2)
@@ -156,6 +168,9 @@ namespace BusBooking.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Token")
+                        .IsUnique();
+
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
@@ -175,21 +190,9 @@ namespace BusBooking.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("DepartureDay")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeSpan>("DepartureTime")
-                        .HasColumnType("interval");
-
                     b.Property<decimal>("Price")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
-
-                    b.Property<int>("ReturnDay")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeSpan>("ReturnTime")
-                        .HasColumnType("interval");
 
                     b.HasKey("Id");
 
@@ -201,11 +204,55 @@ namespace BusBooking.Migrations
                             Id = new Guid("a0000000-0000-0000-0000-000000000001"),
                             ArrivalCity = "Berlin",
                             DepartureCity = "Sofia",
-                            DepartureDay = 1,
+                            Price = 45.00m
+                        });
+                });
+
+            modelBuilder.Entity("BusBooking.Entity.Schedule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("DayOfWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeSpan>("DepartureTime")
+                        .HasColumnType("interval");
+
+                    b.Property<TimeSpan>("Duration")
+                        .HasColumnType("interval");
+
+                    b.Property<bool>("IsReturnTrip")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("RouteId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RouteId");
+
+                    b.ToTable("Schedules");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("d0000000-0000-0000-0000-000000000001"),
+                            DayOfWeek = 1,
                             DepartureTime = new TimeSpan(0, 8, 0, 0, 0),
-                            Price = 45.00m,
-                            ReturnDay = 2,
-                            ReturnTime = new TimeSpan(0, 18, 0, 0, 0)
+                            Duration = new TimeSpan(0, 10, 0, 0, 0),
+                            IsReturnTrip = false,
+                            RouteId = new Guid("a0000000-0000-0000-0000-000000000001")
+                        },
+                        new
+                        {
+                            Id = new Guid("d0000000-0000-0000-0000-000000000002"),
+                            DayOfWeek = 2,
+                            DepartureTime = new TimeSpan(0, 18, 0, 0, 0),
+                            Duration = new TimeSpan(0, 10, 0, 0, 0),
+                            IsReturnTrip = true,
+                            RouteId = new Guid("a0000000-0000-0000-0000-000000000001")
                         });
                 });
 
@@ -220,6 +267,9 @@ namespace BusBooking.Migrations
 
                     b.Property<bool>("IsReserved")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ReservedUntil")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SeatNumber")
                         .HasColumnType("text");
@@ -289,6 +339,9 @@ namespace BusBooking.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("FailedLoginAttempts")
+                        .HasColumnType("integer");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -296,6 +349,9 @@ namespace BusBooking.Migrations
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -321,6 +377,7 @@ namespace BusBooking.Migrations
                         {
                             Id = new Guid("c0000000-0000-0000-0000-000000000001"),
                             Email = "xyz@mail.com",
+                            FailedLoginAttempts = 0,
                             FirstName = "tatiana",
                             LastName = "tat",
                             PasswordHash = "$2a$12$DBm2J6TqFjqAWweLi1mxTOT/AyL/XOxQSuvVWkRCbOEHwaaWZHvyy",
@@ -332,6 +389,7 @@ namespace BusBooking.Migrations
                         {
                             Id = new Guid("c0000000-0000-0000-0000-000000000002"),
                             Email = "xyz1@mail.com",
+                            FailedLoginAttempts = 0,
                             FirstName = "anna",
                             LastName = "aniina",
                             PasswordHash = "$2a$12$DBm2J6TqFjqAWweLi1mxTOT/AyL/XOxQSuvVWkRCbOEHwaaWZHvyy",
@@ -417,6 +475,17 @@ namespace BusBooking.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("BusBooking.Entity.Schedule", b =>
+                {
+                    b.HasOne("BusBooking.Entity.RouteInfo", "Route")
+                        .WithMany("Schedules")
+                        .HasForeignKey("RouteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Route");
+                });
+
             modelBuilder.Entity("BusBooking.Entity.SeatDetail", b =>
                 {
                     b.HasOne("BusBooking.Entity.Trip", "Trip")
@@ -450,6 +519,11 @@ namespace BusBooking.Migrations
             modelBuilder.Entity("BusBooking.Entity.Order", b =>
                 {
                     b.Navigation("OrderSeats");
+                });
+
+            modelBuilder.Entity("BusBooking.Entity.RouteInfo", b =>
+                {
+                    b.Navigation("Schedules");
                 });
 #pragma warning restore 612, 618
         }

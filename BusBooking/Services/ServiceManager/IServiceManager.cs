@@ -6,5 +6,8 @@ namespace BusBooking.Services.ServiceManager
     {
         ITokenService TokenService { get; }
         IPasswordHasherService PasswordHasherService { get; }
+        IPaymentService PaymentService { get; }
+        IPasswordBreachChecker PasswordBreachChecker { get; }
+
     }
 }
