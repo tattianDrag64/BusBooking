@@ -1,10 +1,14 @@
 // Minimal headless-browser driver for BusBooking, used by the
-// run-busbooking skill. Usage:
+// run-busbooking skill. Since Views/cookie-auth were removed (2026-07-10),
+// BusBooking is a pure JSON API — the only browser-driven surface left is
+// Swagger UI. For the actual API flow, use smoke-api.mjs (plain fetch, no
+// browser needed) instead of this driver.
+//
+// Usage:
 //   node driver.mjs <path> [--wait-text "some text"] [--out shot.png]
 //
-// Examples:
-//   node driver.mjs /Users/SignIn --wait-text "Sign In" --out signin.png
-//   node driver.mjs /Users/SignUp --wait-text "Sign Up" --out signup.png
+// Example:
+//   node driver.mjs /swagger --out swagger.png
 
 import { chromium } from 'playwright';
 

@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pometco — Frontend
 
-## Getting Started
+Next.js (App Router) frontend for the Pometco bus booking platform. Talks to the ASP.NET Core API in `../BusBooking/`.
 
-First, run the development server:
+> ⚠️ This project is on a recent Next.js version with real breaking changes vs. older docs/training data (e.g. `middleware.js` → `proxy.js`). See `AGENTS.md` and check `node_modules/next/dist/docs/` before assuming an API still works the way it used to.
+
+## Getting started
+
+From the repo root, `./dev.sh` starts everything (Postgres + backend + this frontend) in one command — see the root `README.md`.
+
+To run just the frontend against an already-running backend:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Requires `NEXT_PUBLIC_API_BASE_URL` in `.env.local` pointing at the backend (default `http://localhost:5100`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## What's here
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **App Router**, all routes under `app/[locale]/` — i18n via `next-intl` (EN unprefixed, RU/RO prefixed: `/ru/...`, `/ro/...`).
+- **JWT auth** — `auth/` (`AuthProvider`/`useAuth`, `tokenStorage` in `localStorage`, `AdminGuard` for the role-gated `/admin/*` section).
+- **Multi-currency** — `currency/` (`CurrencyProvider`/`useCurrency`, rates from the backend, choice persisted in `localStorage`).
+- **Data fetching** — TanStack Query (`lib/QueryProvider.tsx`); `api/*.ts` is one thin client file per backend controller.
+- **Map** — Leaflet + OpenStreetMap (`components/routes/`), client-only (`dynamic(..., { ssr: false })`).
+- **Admin panel** — `app/[locale]/admin/*`, gated by `auth/AdminGuard.tsx` (role check, not just auth check).
 
-## Learn More
+## Conventions
 
-To learn more about Next.js, take a look at the following resources:
+- **`index + vm` pattern** for interactive pages: `page.tsx` (markup only) + `use<Name>PageVM.ts` (state/effects/API calls). See `app/[locale]/login/` for the canonical example.
+- **One `api/*.ts` file per backend controller**, not a single generic HTTP client.
+- **`types/*.ts` mirrors backend VMs** — one file per entity/resource, camelCase to match ASP.NET Core's default JSON serialization.
+- Internal links/navigation use `@/i18n/navigation` (`Link`, `useRouter`, `usePathname`), **not** `next/link`/`next/navigation` directly — those don't carry the locale prefix.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Full architecture reasoning (rendering strategy, why these patterns, Next.js-version-specific gotchas encountered along the way) — **`ARCHITECTURE_NOTES.md`**. Start there for anything non-obvious.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Other docs
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `../ROADMAP.md` — overall project status.
+- `../FRONTEND_PLAN.md`, `../FRONTEND_AUTH_PLAN.md`, `../FRONTEND_STRUCTURE.md` — original scaffolding decisions.
+- `../BOOKING_FLOW_PLAN.md`, `../ADMIN_UI_PLAN.md`, `../DESIGN_UNIFICATION_PLAN.md` — feature-specific design notes, frontend-relevant.

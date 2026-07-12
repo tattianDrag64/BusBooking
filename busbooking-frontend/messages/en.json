@@ -1,0 +1,51 @@
+{
+  "Nav": {
+    "aboutUs": "About Us",
+    "schedules": "Schedules",
+    "tickets": "Tickets",
+    "myBookings": "My bookings",
+    "signOut": "Sign out",
+    "signIn": "Sign in",
+    "admin": "Admin",
+    "callCenter": "Call Center 24/7"
+  },
+  "Footer": {
+    "tagline": "Leading logistics and transport operator in the region, connecting people with comfort and precision since 2012.",
+    "company": "Company",
+    "home": "Home",
+    "aboutUs": "About Us",
+    "routes": "Routes",
+    "contactInfo": "Contact Info",
+    "securePayments": "Secure Payments",
+    "legal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "copyright": "© {year} Pometco Logistics. All rights reserved."
+  },
+  "Home": {
+    "heroTitle": "Order a ticket and we will arrive with comfort",
+    "heroSubtitle": "We will help you realize the trip of dreams with our modern fleet and professional logistics team.",
+    "searchFrom": "From",
+    "searchFromPlaceholder": "Departure city",
+    "searchTo": "To",
+    "searchToPlaceholder": "Arrival city",
+    "searchDeparture": "Departure",
+    "searchReturn": "Return",
+    "searchButton": "Search",
+    "whyTitle": "Why Pometco",
+    "feature1Title": "Comfortable coaches",
+    "feature1Text": "Modern buses with air conditioning and reclining seats.",
+    "feature2Title": "Transparent pricing",
+    "feature2Text": "See the price of every seat before you book — no hidden fees.",
+    "feature3Title": "Experienced drivers",
+    "feature3Text": "Qualified staff with extensive experience on international routes."
+  },
+  "About": {
+    "heroTitle": "About Us",
+    "missionTitle": "Who are we?",
+    "missionP1": "We are a company specialized in the transport of persons, parcels and cars, the starting point or the arrival point being Moldova.",
+    "missionP2": "We also operate with US parcels. Last generation coaches, qualified staff with extensive experience in the field, comfort and safety — all of which we offer you at the lowest prices.",
+    "licensed": "Licensed & Certified Logistics Partner",
+    "reserveNow": "Reserve now!"
+  }
+}

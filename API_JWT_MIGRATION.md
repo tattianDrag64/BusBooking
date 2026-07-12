@@ -4,74 +4,70 @@
 
 ## Следствие, которое нужно держать в уме
 
-**У сайта не будет браузерного UI, пока не появится фронтенд.** Все страницы (`/Users/SignIn`, `/Trip/...` и т.д.) перестанут существовать — останется только JSON API. Для реального клиента это значит: между этим переходом и готовностью Next.js-фронтенда показать ему в браузере будет нечего, кроме Swagger UI (`/swagger`) и ответов через curl/Postman. Раз это осознанный выбор — двигаемся дальше, просто не забывать сообщить об этом клиенту заранее, если он ожидает видеть рабочий сайт в процессе.
-
-## Текущее состояние (проверено в этой сессии)
-
-Уже сделано и работает:
-- JWT-инфраструктура: `Jwt`-конфиг, `Jwt:SigningKey` в user-secrets, `RefreshToken` (сущность + миграция + репозиторий)
-- `IUnitOfWork`/`UnitOfWork` — `Repository/UnitOfWork/`
-- `ITokenService`/`IPasswordHasherService`/`IServiceManager` — `Services/`
-- `Controllers/AuthController.cs` — `api/auth`: `signup`, `signin`, `refresh`, `revoke` (уже прямо в `Controllers/`, не в `Controllers/Api/` — раз гибрид отменяется, отдельная подпапка `Api/` больше не нужна вообще, все контроллеры будут API)
-- `Program.cs` — сейчас dual-scheme (cookie + JWT), `AddControllersWithViews`, `AddSession`
-
-Остались MVC-контроллеры (под снос): `UsersController.cs`, `TripController.cs`, `SeatDetailController.cs`, `BookingController.cs`, `HomeController.cs`.
+**У сайта не будет браузерного UI, пока не появится фронтенд.** Все страницы перестали существовать — остался только JSON API. Для реального клиента это значит: до готовности Next.js-фронтенда показать в браузере нечего, кроме Swagger UI (`/swagger`) и ответов через curl/Postman.
 
 ---
 
-## Шаг 1 — Написать недостающие API-контроллеры
+## Шаг 1 — API-контроллеры — ЗАВЕРШЁН
 
-Прежде чем сносить старые MVC-контроллеры — новые API-эквиваленты должны закрывать ту же функциональность, иначе просто потеряется код без замены.
+Все контроллеры написаны, собираются чисто и проверены живым сквозным флоу (создание рейса → автогенерация мест → бронирование → повторное бронирование `409` → просмотр своих заказов).
 
-- [+] `TripsController` (`api/trips`) — покрыт `TripController`: `search` (GET, публичный, без авторизации — решено), `ListTrips`/`Create`/`Edit`(PUT)/`Delete` (admin-only). `Edit` — через `TripEditVM`, без прямого биндинга в `Trip`. Проверено вживую: `search` без токена `200`, `list` без токена `401`, `list` с токеном админа `200`, `list` с токеном обычного юзера `403`
-- [ ] `SeatsController` (`api/seats`) или методы внутри `TripsController` — покрыть `SeatDetailController.ChooseSeats` (GET — список мест на рейс, POST — бронирование места + создание `Order`/`OrderSeat`)
-- [ ] `BookingsController` (`api/bookings`) — покрыть `BookingController.MyBookings` (список заказов текущего юзера — `ClaimTypes.NameIdentifier` из JWT, не из cookie)
-- [ ] `UsersController` (`api/users`) — покрыть `UsersController.Index` (список юзеров, admin-only)
-- [ ] На всех защищённых actions — явная схема: `[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]`
+- [+] `AuthController` (`api/auth`) — `signup`, `signin`, `refresh`, `revoke`
+- [+] `TripsController` (`api/trips`) — `search` (GET, публичный), `ListTrips`/`Create`/`Edit`(PUT)/`Delete` (admin-only через `TripEditVM`, без прямого биндинга в `Trip`)
+- [+] `SeatsController` (`api/seats`) — `GET trip/{tripId}` (автогенерация мест при первом обращении), `POST book` (создание `Order`+`OrderSeat`). Добавлена проверка, которой не было в оригинале: занятое место — явный `409`, а не тихий no-op с последующим падением на unique-индексе `OrderSeat.SeatDetailId`
+- [+] `BookingsController` (`api/bookings`) — `GET my`, ответ через `OrderSummaryVM` (не сырая сущность `Order`)
+- [+] `UsersController` (`api/users`) — `GET` (admin-only), ответ через `UserSummaryVM` (не сырая сущность `User` — иначе `PasswordHash` утёк бы в JSON)
+- [+] Везде — явная схема `[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]`
+- [+] Роли — `enum UserRole { Admin, Customer }` (`Entity/UserRole.cs`), не строки: `nameof(UserRole.Admin)` в `[Authorize]`, `user.Role.ToString()` в `TokenService`, `.HasConversion<string>()` в `ApplicationDbContext`. Устраняет класс багов "регистр роли не совпал → молчаливый 403"
+- [+] `Program.cs`: enum'ы сериализуются в JSON строкой (`"Admin"`, не `0`) — `AddControllers().AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))`
+- [+] Найден и исправлен попутный баг: `TripsController.Create`/`Edit` падали на `Npgsql.ArgumentException` (`Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone'`), если клиент присылал дату без таймзоны — `System.Text.Json` даёт `Kind=Unspecified`, колонка `timestamptz` требует `Kind=Utc`. Фикс — `DateTime.SpecifyKind(model.X, DateTimeKind.Utc)` на входе в оба action
 
-**Гоча, встреченная на `TripsController` и закрытая окончательно:** сначала был баг с регистром роли в JWT-claim (`"Admin"` из БД vs `"admin"`-литерал в `[Authorize(Roles=...)]`, скопированный со старой cookie-схемы) — ловил молчаливый `403`. Вместо точечного фикса регистра `User.Role` переведён с `string` на `enum UserRole { Admin, Customer }` (`Entity/UserRole.cs`), с `.HasConversion<string>()` в `ApplicationDbContext` (в БД по-прежнему читаемый текст). Теперь опечатка/рассинхрон регистра невозможны на уровне компиляции:
-- В `[Authorize(Roles = ...)]` — `nameof(UserRole.Admin)` (не строковый литерал)
-- В `TokenService` — `user.Role.ToString()` при генерации claim
-- Везде во внутренней логике — `user.Role == UserRole.Admin`, не сравнение строк
-- Миграция `ConvertRoleToEnum` — пустая (тип колонки в БД не изменился), уже применена
+Старые MVC-контроллеры удалены по мере того, как новые их полностью заменяли: `UsersController.cs`, `BookingController.cs`, `SeatDetailController.cs`, `TripController.cs`.
 
-## Шаг 2 — Убедиться, что новый API покрывает старый функционал
+## Шаг 2 — Проверка покрытия старого функционала — ЗАВЕРШЁН
 
-- [ ] Через Swagger UI или curl пройти каждый эндпоинт выше хотя бы один раз вручную, сверяя с тем, что делал соответствующий старый MVC action
-- [ ] Особое внимание — `SeatDetailController.ChooseSeats`: там нетривиальная логика (автогенерация мест при первом обращении к рейсу, создание `Order`+`OrderSeat` одной транзакцией) — не потерять при переносе
+- [+] Полный флоу проверен вручную через curl (не Swagger UI, но эквивалентно): signup/signin → создание рейса → места → бронирование → конфликт при повторном бронировании → список своих заказов
+- [+] Нетривиальная логика `ChooseSeats` (автогенерация мест, создание `Order`+`OrderSeat`) — перенесена и проверена, ничего не потеряно
 
-## Шаг 3 — Снести старые MVC-контроллеры и Views
+## Шаг 3 — Снести старые MVC-контроллеры и Views — ЗАВЕРШЁН
 
-- [ ] Удалить `Controllers/UsersController.cs`, `Controllers/TripController.cs`, `Controllers/SeatDetailController.cs`, `Controllers/BookingController.cs`
-- [ ] `Controllers/HomeController.cs` — скорее всего тоже под снос (`Privacy`/`Error` — Views-специфичные actions); `Error`-обработку для API заменить на middleware (`app.UseExceptionHandler` уже есть, но сейчас редиректит на `/Home/Error` — Views-путь; заменить на JSON-обработчик ошибок)
-- [ ] Удалить папку `Views/` целиком
-- [ ] Удалить `wwwroot/css/`, `wwwroot/lib/` (Bootstrap и т.д.) — не нужны без Views. `wwwroot/` в принципе можно удалить целиком, если там нет ничего, что отдаётся API (обычно нет)
-
-## Шаг 4 — `Program.cs`: убрать MVC-инфраструктуру и cookie-схему
-
-- [ ] `AddControllersWithViews()` → `AddControllers()`
-- [ ] Убрать блок `AddSession()`/`app.UseSession()` — сессии были нужны только `TempData` в `SeatDetailController`, которого больше нет
-- [ ] Убрать `AddCookie(...)` и `DefaultScheme = CookieAuthenticationDefaults...` — оставить только:
+- [+] Старые контроллеры удалены (см. Шаг 1)
+- [+] `Views/` удалена
+- [+] `wwwroot/` удалена
+- [+] `HomeController.cs` удалён целиком (был мёртвым кодом — `View()` без `Views/`, недостижим через роутинг), заодно `Models/ErrorViewModel.cs` (использовался только там)
+- [+] `app.UseExceptionHandler("/Home/Error")` заменён на JSON-обработчик:
   ```csharp
-  builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-      .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options => { /* как было */ });
+  app.UseExceptionHandler(a => a.Run(async ctx =>
+  {
+      ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
+      ctx.Response.ContentType = "application/json";
+      await ctx.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
+  }));
   ```
-- [ ] Убрать `app.UseStaticFiles()`, если `wwwroot/` снесён
-- [ ] Убрать `app.MapControllerRoute(...)` (MVC-роутинг по конвенции) — для API-контроллеров нужен `app.MapControllers()` вместо него
-- [ ] Убрать `using Microsoft.AspNetCore.Authentication.Cookies;`, если больше нигде не используется
+- [+] Проверено вживую: `dotnet build` чисто, приложение стартует, `/Home/Privacy` (старый мёртвый роут) теперь честный `404`, основные API-эндпоинты (`search`/`users`/`bookings/my`) отвечают `200`
 
-## Шаг 5 — Проверка
+## Шаг 4 — `Program.cs`: MVC-инфраструктура и cookie-схема — ЗАВЕРШЁН
 
-- [ ] `dotnet build` — чисто
-- [ ] Через Swagger UI (`/swagger`) пройти весь флоу: `signup` → `signin` → получить токен → вызвать защищённый эндпоинт с `Authorization: Bearer ...` → `refresh` → `revoke`
-- [ ] Обновить `run-busbooking` skill (`.claude/skills/run-busbooking/SKILL.md`) — старые URL вида `/Users/SignIn` и скриншот-флоу через форму больше не актуальны; драйвер нужно переписать под curl/fetch к JSON-эндпоинтам вместо Playwright-скриншотов страниц, которых не будет
+- [+] `AddControllersWithViews()` → `AddControllers()`
+- [+] `AddSession()`/`app.UseSession()` убраны
+- [+] Cookie-схема убрана, осталась только JWT
+- [+] `app.UseStaticFiles()` убран
+- [+] `app.MapControllerRoute(...)` → `app.MapControllers()`
+- [+] `using Microsoft.AspNetCore.Authentication.Cookies;` убран
 
-## Шаг 6 — CORS и Swagger уже готовы
+## Шаг 5 — Финальная проверка
 
-Сделаны раньше, менять не нужно — `AddCors`/`UseCors("Frontend")`, `AddSwaggerGen`/`UseSwagger`/`UseSwaggerUI` продолжают работать без изменений.
+- [+] `dotnet build` — чисто
+- [+] Полный флоу через curl с реальными токенами — работает (см. Шаг 1/2)
+- [+] Через сам Swagger UI (`/swagger`) — открыт headless-браузером (Playwright), заскриншочен: все 5 групп (`Auth`, `Bookings`, `Seats`, `Trips`, `Users`) с точными путями, 0 ошибок консоли
+- [+] `run-busbooking` skill (`.claude/skills/run-busbooking/SKILL.md`) переписан под JSON-API: `smoke-login.mjs`/`smoke-authed-pages.mjs` (скриншотили несуществующие Views) удалены; новый `smoke-api.mjs` — полный флоу через `fetch` (health → signin → search → users 401/200 → seats автогенерация → book → duplicate `409` → my bookings → refresh → revoke), прогнан вживую, все 11 проверок `[OK]`. `driver.mjs` оставлен только для скриншота Swagger UI
+
+## Шаг 6 — CORS и Swagger — ЗАВЕРШЁН
+
+`AddCors`/`UseCors("Frontend")`, `AddSwaggerGen`/`UseSwagger`/`UseSwaggerUI` — работают без изменений.
 
 ---
 
-## Что было в старом плане и больше не актуально
+## Переход завершён полностью
 
-Шаги про "гибрид", "не трогать `app.UseSession()`", "новые Api-контроллеры рядом со старыми, не удаляя их", "тестирование обоих флоу параллельно" — всё это снято, поскольку решение изменилось на полный, единовременный переход.
+Все шаги плана закрыты и проверены вживую. Следующий логичный шаг — вернуться к `ROADMAP.md` и продолжить с Фазы 2 (rate limiting/lockout на новых `api/auth/*` роутах) или Фазы 5 (бизнес-функционал).

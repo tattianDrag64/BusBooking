@@ -1,0 +1,68 @@
+/*
+  Pometco Logistics Core — color tokens.
+  Each --color-<name> below becomes a Tailwind utility suffix, e.g.:
+    --color-primary        -> bg-primary, text-primary, border-primary
+    --color-on-primary     -> bg-on-primary, text-on-primary
+    --color-surface-light  -> bg-surface-light
+  Change a hex value here once, every utility class using it updates.
+*/
+@theme {
+  --color-surface: #faf9f9;
+  --color-surface-dim: #dbdad9;
+  --color-surface-bright: #faf9f9;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f5f3f3;
+  --color-surface-container: #efeded;
+  --color-surface-container-high: #e9e8e8;
+  --color-surface-container-highest: #e3e2e2;
+  --color-on-surface: #1b1c1c;
+  --color-on-surface-variant: #4b4452;
+  --color-inverse-surface: #303031;
+  --color-inverse-on-surface: #f2f0f0;
+  --color-outline: #7c7483;
+  --color-outline-variant: #cdc3d4;
+  --color-surface-tint: #7444b8;
+
+  --color-primary: #46088a;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #5e2ca2;
+  --color-on-primary-container: #ccaaff;
+  --color-inverse-primary: #d7baff;
+
+  --color-secondary: #704ca4;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #c59ffe;
+  --color-on-secondary-container: #532f87;
+
+  --color-tertiary: #363140;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #4c4758;
+  --color-on-tertiary-container: #beb6ca;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-primary-fixed: #eddcff;
+  --color-primary-fixed-dim: #d7baff;
+  --color-on-primary-fixed: #280056;
+  --color-on-primary-fixed-variant: #5b289f;
+
+  --color-secondary-fixed: #eddcff;
+  --color-secondary-fixed-dim: #d7baff;
+  --color-on-secondary-fixed: #280056;
+  --color-on-secondary-fixed-variant: #57338a;
+
+  --color-tertiary-fixed: #e8dff4;
+  --color-tertiary-fixed-dim: #cbc3d7;
+  --color-on-tertiary-fixed: #1d1928;
+  --color-on-tertiary-fixed-variant: #494455;
+
+  --color-background: #faf9f9;
+  --color-on-background: #1b1c1c;
+  --color-surface-variant: #e3e2e2;
+  --color-surface-light: #f3eaff;
+  --color-text-muted: #818181;
+  --color-deep-navy: #1a0b2e;
+}

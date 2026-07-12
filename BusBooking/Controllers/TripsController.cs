@@ -39,24 +39,30 @@ namespace BusBooking.Controllers
             return Ok(results);
         }
 
-        // GET api/trips
+        // GET api/trips?page=1&pageSize=20
         [HttpGet]
         [Authorize(Roles = nameof(UserRole.Admin), AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public IActionResult ListTrips()
+        public IActionResult ListTrips([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var trips = _unitOfWork.Trip.GetAll().Select(t => new TripCreateVM
-            {
-                TripId = t.Id,
-                From = t.From,
-                To = t.To,
-                DepartureDate = t.DepartureDate,
-                ArrivalDate = t.ArrivalDate,
-                IsReturnTrip = t.IsReturnTrip,
-                Price = t.Price,
-                BusId = t.BusId,
-            });
+            page = Math.Max(page, 1);
+            pageSize = Math.Clamp(pageSize, 1, 100);
 
-            return Ok(trips);
+            var totalCount = _unitOfWork.Trip.Count();
+            var trips = _unitOfWork.Trip
+                .GetPage((page - 1) * pageSize, pageSize)
+                .Select(t => new TripCreateVM
+                {
+                    TripId = t.Id,
+                    From = t.From,
+                    To = t.To,
+                    DepartureDate = t.DepartureDate,
+                    ArrivalDate = t.ArrivalDate,
+                    IsReturnTrip = t.IsReturnTrip,
+                    Price = t.Price,
+                    BusId = t.BusId,
+                });
+
+            return Ok(new { items = trips, page, pageSize, totalCount });
         }
 
         // POST api/trips
@@ -76,8 +82,8 @@ namespace BusBooking.Controllers
                 To = model.To,
                 BusId = model.BusId,
                 RouteId = bus.RouteId,
-                DepartureDate = model.DepartureDate,
-                ArrivalDate = model.ArrivalDate,
+                DepartureDate = DateTime.SpecifyKind(model.DepartureDate, DateTimeKind.Utc),
+                ArrivalDate = DateTime.SpecifyKind(model.ArrivalDate, DateTimeKind.Utc),
                 IsReturnTrip = model.IsReturnTrip,
                 Price = model.Price
             };
@@ -101,8 +107,8 @@ namespace BusBooking.Controllers
 
             tripToUpdate.From = model.From;
             tripToUpdate.To = model.To;
-            tripToUpdate.DepartureDate = model.DepartureDate;
-            tripToUpdate.ArrivalDate = model.ArrivalDate;
+            tripToUpdate.DepartureDate = DateTime.SpecifyKind(model.DepartureDate, DateTimeKind.Utc);
+            tripToUpdate.ArrivalDate = DateTime.SpecifyKind(model.ArrivalDate, DateTimeKind.Utc);
             tripToUpdate.IsReturnTrip = model.IsReturnTrip;
             tripToUpdate.Price = model.Price;
 
@@ -110,6 +116,71 @@ namespace BusBooking.Controllers
             _unitOfWork.Save();
 
             return NoContent();
+        }
+
+        // POST api/trips/generate — creates Trip rows for the next N weeks from every
+        // Schedule slot across all routes, skipping ones that already exist.
+        [HttpPost("generate")]
+        [Authorize(Roles = nameof(UserRole.Admin), AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public IActionResult GenerateTrips([FromBody] TripGenerateRequestVM model)
+        {
+            var weeksAhead = model.WeeksAhead > 0 ? model.WeeksAhead : 4;
+            var today = DateTime.UtcNow.Date;
+            var endDate = today.AddDays(weeksAhead * 7);
+
+            var schedules = _unitOfWork.Schedule.GetAll(includeProperties: "Route");
+
+            var created = 0;
+            var skipped = 0;
+            var skippedNoBus = 0;
+
+            foreach (var schedule in schedules)
+            {
+                var bus = _unitOfWork.Bus.GetAll(b => b.RouteId == schedule.RouteId).FirstOrDefault();
+                if (bus == null)
+                {
+                    // No bus assigned to this route yet — nothing to generate trips for.
+                    skippedNoBus++;
+                    continue;
+                }
+
+                for (var date = today; date < endDate; date = date.AddDays(1))
+                {
+                    if (schedule.DayOfWeek != null && date.DayOfWeek != schedule.DayOfWeek)
+                    {
+                        continue;
+                    }
+
+                    var departureDate = DateTime.SpecifyKind(date.Add(schedule.DepartureTime), DateTimeKind.Utc);
+
+                    if (_unitOfWork.Trip.TripExists(schedule.RouteId, departureDate, schedule.IsReturnTrip))
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    var (from, to) = schedule.IsReturnTrip
+                        ? (schedule.Route.ArrivalCity, schedule.Route.DepartureCity)
+                        : (schedule.Route.DepartureCity, schedule.Route.ArrivalCity);
+
+                    _unitOfWork.Trip.Add(new Trip
+                    {
+                        From = from,
+                        To = to,
+                        BusId = bus.Id,
+                        RouteId = schedule.RouteId,
+                        DepartureDate = departureDate,
+                        ArrivalDate = departureDate.Add(schedule.Duration),
+                        IsReturnTrip = schedule.IsReturnTrip,
+                        Price = (double)schedule.Route.Price,
+                    });
+                    created++;
+                }
+            }
+
+            _unitOfWork.Save();
+
+            return Ok(new { created, skipped, skippedNoBus });
         }
 
         // DELETE api/trips/{id}

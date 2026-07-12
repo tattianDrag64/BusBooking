@@ -8,6 +8,7 @@ namespace BusBooking.Services.ServiceManager
         IPasswordHasherService PasswordHasherService { get; }
         IPaymentService PaymentService { get; }
         IPasswordBreachChecker PasswordBreachChecker { get; }
+        ICurrencyRateService CurrencyRateService { get; }
 
     }
 }

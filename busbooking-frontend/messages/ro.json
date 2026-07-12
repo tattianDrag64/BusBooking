@@ -1,0 +1,51 @@
+{
+  "Nav": {
+    "aboutUs": "Despre noi",
+    "schedules": "Orare",
+    "tickets": "Bilete",
+    "myBookings": "Rezervările mele",
+    "signOut": "Deconectare",
+    "signIn": "Conectare",
+    "admin": "Admin",
+    "callCenter": "Call Center 24/7"
+  },
+  "Footer": {
+    "tagline": "Operator logistic și de transport de top în regiune, conectând oamenii cu confort și precizie din 2012.",
+    "company": "Companie",
+    "home": "Acasă",
+    "aboutUs": "Despre noi",
+    "routes": "Rute",
+    "contactInfo": "Informații de contact",
+    "securePayments": "Plăți securizate",
+    "legal": "Legal",
+    "privacyPolicy": "Politica de confidențialitate",
+    "termsOfService": "Termeni și condiții",
+    "copyright": "© {year} Pometco Logistics. Toate drepturile rezervate."
+  },
+  "Home": {
+    "heroTitle": "Comandă un bilet și vom ajunge cu confort",
+    "heroSubtitle": "Te ajutăm să realizezi călătoria visurilor cu flota noastră modernă și echipa profesionistă de logistică.",
+    "searchFrom": "De la",
+    "searchFromPlaceholder": "Orașul de plecare",
+    "searchTo": "Către",
+    "searchToPlaceholder": "Orașul de sosire",
+    "searchDeparture": "Plecare",
+    "searchReturn": "Întoarcere",
+    "searchButton": "Caută",
+    "whyTitle": "De ce Pometco",
+    "feature1Title": "Autocare confortabile",
+    "feature1Text": "Autobuze moderne cu aer condiționat și scaune rabatabile.",
+    "feature2Title": "Prețuri transparente",
+    "feature2Text": "Vezi prețul fiecărui loc înainte de a rezerva — fără costuri ascunse.",
+    "feature3Title": "Șoferi cu experiență",
+    "feature3Text": "Personal calificat, cu experiență vastă pe rute internaționale."
+  },
+  "About": {
+    "heroTitle": "Despre noi",
+    "missionTitle": "Cine suntem?",
+    "missionP1": "Suntem o companie specializată în transportul de persoane, colete și mașini pe platformă, punctul de plecare sau de sosire fiind Moldova.",
+    "missionP2": "De asemenea, operăm cu colete din SUA. Autocare de ultimă generație, personal calificat cu experiență vastă în domeniu, confort și siguranță — toate acestea la cele mai mici prețuri.",
+    "licensed": "Partener logistic licențiat și certificat",
+    "reserveNow": "Rezervă acum!"
+  }
+}

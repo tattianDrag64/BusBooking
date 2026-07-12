@@ -19,11 +19,14 @@ namespace BusBooking.Repository
             return Items.Where(t => t.DepartureDate.Date == departureDate.Date).ToList();
         }
 
+        // Exact timestamp match, not just the date — a route can now have multiple
+        // Schedule slots on the same day (e.g. 10:00, 13:00, 16:00), so comparing by
+        // date alone would treat those as duplicates of each other.
         public bool TripExists(Guid routeId, DateTime departureDate, bool isReturnTrip)
         {
             return Items.Any(t =>
                 t.RouteId == routeId &&
-                t.DepartureDate.Date == departureDate.Date &&
+                t.DepartureDate == departureDate &&
                 t.IsReturnTrip == isReturnTrip);
         }
     }

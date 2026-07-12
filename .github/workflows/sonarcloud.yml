@@ -1,0 +1,78 @@
+name: SonarCloud
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # SonarCloud needs full history for accurate blame/duplication analysis.
+          fetch-depth: 0
+
+      - name: Set up Java (required by the SonarScanner engine)
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 17
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache dotnet-sonarscanner
+        uses: actions/cache@v4
+        with:
+          path: ~/.dotnet/tools
+          key: ${{ runner.os }}-dotnet-sonarscanner
+
+      - name: Install dotnet-sonarscanner
+        run: |
+          if ! command -v dotnet-sonarscanner &> /dev/null; then
+            dotnet tool install --global dotnet-sonarscanner
+          fi
+
+      - name: Install frontend dependencies
+        working-directory: busbooking-frontend
+        run: npm ci
+
+      # SONAR_ORG / SONAR_PROJECT_KEY: replace the placeholders below once the
+      # project exists on sonarcloud.io (see SONARCLOUD_SETUP_PLAN.md, step 3).
+      - name: Begin SonarCloud scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: >
+          dotnet-sonarscanner begin
+          /k:"<SONAR_PROJECT_KEY>"
+          /o:"<SONAR_ORG>"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**,**/.next/**,**/Migrations/**"
+
+      - name: Build backend
+        run: dotnet build BusBooking.sln
+
+      - name: End SonarCloud scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"

@@ -36,5 +36,10 @@ namespace BusBooking.Services
         {
             return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }
+
+        public string HashRefreshToken(string rawToken)
+        {
+            return Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(rawToken)));
+        }
     }
 }

@@ -12,5 +12,7 @@ namespace BusBooking.Entity
         public required string Email { get; set; }
         public string? Phone { get; set; }
         public required UserRole Role { get; set; }
+        public int FailedLoginAttempts { get; set; }
+        public DateTime? LockoutEnd { get; set; }
     }
 }

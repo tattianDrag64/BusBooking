@@ -12,6 +12,7 @@ namespace BusBooking.Repository.UnitOfWork
         IOrderSeatRepository OrderSeat { get; }
         IRouteRepository Route { get; }
         IRefreshTokenRepository RefreshToken { get; }
+        IScheduleRepository Schedule { get; }
 
         void Save();
     }

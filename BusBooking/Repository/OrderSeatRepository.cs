@@ -11,5 +11,11 @@ namespace BusBooking.Repository
         {
             return [.. Items.Where(os => os.OrderId == orderId)];
         }
+
+        public IEnumerable<OrderSeat> GetBySeatDetailIds(IEnumerable<Guid> seatDetailIds)
+        {
+            var ids = seatDetailIds as ICollection<Guid> ?? [.. seatDetailIds];
+            return ids.Count == 0 ? [] : [.. Items.Where(os => ids.Contains(os.SeatDetailId))];
+        }
     }
 }

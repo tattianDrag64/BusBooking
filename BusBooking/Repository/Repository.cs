@@ -37,7 +37,7 @@ namespace BusBooking.Repository
 
         public IEnumerable<T> GetAll(Expression<Func<T, bool>>? filter = null, string? includeProperties = null)
         {
-            IQueryable<T> query = Items;
+            IQueryable<T> query = Items.AsNoTracking();
             if (filter != null)
             {
                 query = query.Where(filter);
@@ -51,6 +51,33 @@ namespace BusBooking.Repository
                 }
             }
             return [.. query];
+        }
+
+        public IEnumerable<T> GetPage(int skip, int take, Expression<Func<T, bool>>? filter = null, string? includeProperties = null)
+        {
+            IQueryable<T> query = Items.AsNoTracking();
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var includeProp in includeProperties
+                    .Split([','], StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProp);
+                }
+            }
+            // Skip/Take without a stable ORDER BY isn't guaranteed to return consistent
+            // pages across calls — Id is a version-7 GUID, so ordering by it is also
+            // roughly chronological.
+            return [.. query.OrderBy(e => e.Id).Skip(skip).Take(take)];
+        }
+
+        public int Count(Expression<Func<T, bool>>? filter = null)
+        {
+            IQueryable<T> query = Items;
+            return filter == null ? query.Count() : query.Count(filter);
         }
 
         public void Remove(T entity)

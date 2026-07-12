@@ -8,6 +8,10 @@
         public required Guid TripId { get; set; }
         public decimal TotalPrice { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public OrderStatus Status { get; set; } = OrderStatus.PendingPayment;
+        public string? StripeSessionId { get; set; }
+        public string? StripePaymentIntentId { get; set; }
+        public string? CancellationReason { get; set; }
 
         public virtual User User { get; set; } = null!;
         public virtual RouteInfo Route { get; set; } = null!;

@@ -13,8 +13,11 @@ namespace BusBooking.Data
         public DbSet<Bus> Buses { get; set; }
         public DbSet<RouteInfo> Routes { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Schedule> Schedules { get; set; }
 
         private static readonly Guid SeedRouteId = Guid.Parse("a0000000-0000-0000-0000-000000000001");
+        private static readonly Guid SeedScheduleOutboundId = Guid.Parse("d0000000-0000-0000-0000-000000000001");
+        private static readonly Guid SeedScheduleReturnId = Guid.Parse("d0000000-0000-0000-0000-000000000002");
         private static readonly Guid SeedBus1Id = Guid.Parse("b0000000-0000-0000-0000-000000000001");
         private static readonly Guid SeedBus2Id = Guid.Parse("b0000000-0000-0000-0000-000000000002");
         private static readonly Guid SeedBus3Id = Guid.Parse("b0000000-0000-0000-0000-000000000003");
@@ -29,11 +32,27 @@ namespace BusBooking.Data
                         Id = SeedRouteId,
                         DepartureCity = "Sofia",
                         ArrivalCity = "Berlin",
-                        DepartureDay = DayOfWeek.Monday,
-                        ReturnDay = DayOfWeek.Tuesday,
-                        DepartureTime = TimeSpan.Parse("08:00:00"),
-                        ReturnTime = TimeSpan.Parse("18:00:00"),
                         Price = 45.00m
+                    });
+
+            modelBuilder.Entity<Schedule>().HasData(
+                    new Schedule
+                    {
+                        Id = SeedScheduleOutboundId,
+                        RouteId = SeedRouteId,
+                        DayOfWeek = DayOfWeek.Monday,
+                        DepartureTime = TimeSpan.Parse("08:00:00"),
+                        Duration = TimeSpan.FromHours(10),
+                        IsReturnTrip = false
+                    },
+                    new Schedule
+                    {
+                        Id = SeedScheduleReturnId,
+                        RouteId = SeedRouteId,
+                        DayOfWeek = DayOfWeek.Tuesday,
+                        DepartureTime = TimeSpan.Parse("18:00:00"),
+                        Duration = TimeSpan.FromHours(10),
+                        IsReturnTrip = true
                     });
 
             modelBuilder.Entity<Bus>().HasData(
@@ -149,10 +168,17 @@ namespace BusBooking.Data
                 .HasForeignKey(sd => sd.TripId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            //routeinfo 
+            //routeinfo
             modelBuilder.Entity<RouteInfo>()
                 .Property(r => r.Price)
                 .HasPrecision(10, 2);
+
+            // Schedule
+            modelBuilder.Entity<Schedule>()
+                .HasOne(s => s.Route)
+                .WithMany(r => r.Schedules)
+                .HasForeignKey(s => s.RouteId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             //token
             modelBuilder.Entity<RefreshToken>()
@@ -161,9 +187,20 @@ namespace BusBooking.Data
                 .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Looked up on every /api/auth/refresh and /api/auth/revoke call — without an
+            // index this is a full table scan that gets worse as tokens accumulate.
+            modelBuilder.Entity<RefreshToken>()
+                .HasIndex(rt => rt.Token)
+                .IsUnique();
+
             modelBuilder.Entity<User>()
                 .Property(u => u.Role)
                 .HasConversion<string>();
+
+            // AuthController compares via .ToLower(), which Npgsql translates to lower(...) =
+            // lower(...) — a plain index on Email/Username wouldn't be used by the query
+            // planner for that comparison, so these are expression indexes over lower(...)
+            // instead (added via raw SQL in the migration, see AddAuthLookupIndexes).
         }
     }
 }

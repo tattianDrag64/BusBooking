@@ -9,6 +9,7 @@ namespace BusBooking.Entity
         [Required]
         public bool IsOccupied { get; set; }
         public bool IsReserved { get; set; } = false;
+        public DateTime? ReservedUntil { get; set; }
         public string? SeatNumber { get; set; }
 
         public required Guid TripId { get; set; }
